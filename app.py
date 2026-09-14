@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 import streamlit as st
@@ -45,17 +46,14 @@ st.markdown(
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-
         color: #ffffff;
     }
-
 
     .block-container {
         max-width: 1450px;
         padding-top: 1.2rem;
         padding-bottom: 3rem;
     }
-
 
     body,
     p,
@@ -77,11 +75,6 @@ st.markdown(
         color: #f5fff7;
     }
 
-
-    /* ======================================================
-       NATIVE TOP HEADER
-       ====================================================== */
-
     [data-testid="stAppViewContainer"] h1 {
         color: #ffffff !important;
         font-size: 2.4rem !important;
@@ -93,51 +86,24 @@ st.markdown(
         color: #e1ffe9 !important;
     }
 
-
-    /* ======================================================
-       SECTION HEADINGS
-       ====================================================== */
-
     .section-heading {
         font-size: 1.45rem;
         font-weight: 850;
         color: #ffffff !important;
-
         margin-top: 30px;
         margin-bottom: 14px;
-
         padding: 10px 14px;
-
         border-left: 5px solid #7ee69c;
-
-        background:
-            rgba(6, 58, 32, 0.75);
-
+        background: rgba(6, 58, 32, 0.75);
         border-radius: 8px;
     }
 
-
-    /* ======================================================
-       CONTAINERS
-       ====================================================== */
-
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background:
-            rgba(7, 52, 30, 0.90) !important;
-
-        border:
-            1px solid rgba(183, 255, 199, 0.23) !important;
-
+        background: rgba(7, 52, 30, 0.90) !important;
+        border: 1px solid rgba(183, 255, 199, 0.23) !important;
         border-radius: 16px !important;
-
-        box-shadow:
-            0 8px 25px rgba(0, 0, 0, 0.23);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.23);
     }
-
-
-    /* ======================================================
-       METRICS
-       ====================================================== */
 
     [data-testid="stMetricLabel"] {
         color: #c7f5d2 !important;
@@ -153,26 +119,15 @@ st.markdown(
         color: #a9f2bb !important;
     }
 
-
-    /* ======================================================
-       CAPTIONS
-       ====================================================== */
-
     .stCaption,
     [data-testid="stCaptionContainer"] {
         color: #bce9c8 !important;
     }
 
-
-    /* ======================================================
-       INPUT BOXES
-       ====================================================== */
-
     input,
     textarea {
         background-color: #f4fff6 !important;
         color: #102719 !important;
-
         border: 2px solid #76c98d !important;
         border-radius: 10px !important;
     }
@@ -182,15 +137,9 @@ st.markdown(
         color: #607566 !important;
     }
 
-
-    /* ======================================================
-       SELECTBOX
-       ====================================================== */
-
     [data-baseweb="select"] > div {
         background-color: #f4fff6 !important;
         color: #102719 !important;
-
         border: 2px solid #76c98d !important;
         border-radius: 10px !important;
     }
@@ -198,11 +147,6 @@ st.markdown(
     [data-baseweb="select"] span {
         color: #102719 !important;
     }
-
-
-    /* ======================================================
-       BUTTONS
-       ====================================================== */
 
     .stButton > button {
         background:
@@ -213,16 +157,11 @@ st.markdown(
             ) !important;
 
         color: #ffffff !important;
-
         border: 1px solid #83e6a0 !important;
         border-radius: 12px !important;
-
         font-weight: 800 !important;
-
         padding: 0.55rem 1.2rem !important;
-
-        box-shadow:
-            0 6px 18px rgba(0, 0, 0, 0.28);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
     }
 
     .stButton > button:hover {
@@ -236,20 +175,10 @@ st.markdown(
         color: #ffffff !important;
     }
 
-
-    /* ======================================================
-       FILE UPLOADER
-       ====================================================== */
-
     [data-testid="stFileUploader"] {
-        background:
-            rgba(8, 55, 32, 0.94) !important;
-
-        border:
-            2px dashed #7de59b !important;
-
+        background: rgba(8, 55, 32, 0.94) !important;
+        border: 2px dashed #7de59b !important;
         border-radius: 16px !important;
-
         padding: 12px !important;
     }
 
@@ -267,11 +196,6 @@ st.markdown(
         color: #ffffff !important;
     }
 
-
-    /* ======================================================
-       ALERTS
-       ====================================================== */
-
     [data-testid="stAlert"] {
         border-radius: 12px !important;
     }
@@ -279,11 +203,6 @@ st.markdown(
     [data-testid="stAlert"] p {
         color: #ffffff !important;
     }
-
-
-    /* ======================================================
-       PROGRESS BAR
-       ====================================================== */
 
     [data-testid="stProgressBar"] > div {
         background-color: #174c2d !important;
@@ -293,19 +212,9 @@ st.markdown(
         background-color: #71df91 !important;
     }
 
-
-    /* ======================================================
-       IMAGES
-       ====================================================== */
-
     img {
         border-radius: 14px;
     }
-
-
-    /* ======================================================
-       RECOMMENDATION
-       ====================================================== */
 
     .recommendation {
         background:
@@ -315,40 +224,23 @@ st.markdown(
                 rgba(11, 67, 36, 0.97)
             );
 
-        border-left:
-            5px solid #7be59a;
-
+        border-left: 5px solid #7be59a;
         padding: 15px 18px;
-
         border-radius: 12px;
-
         margin-top: 10px;
-
         color: #ffffff !important;
-
-        box-shadow:
-            0 6px 18px rgba(0, 0, 0, 0.22);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
     }
 
     .recommendation * {
         color: #ffffff !important;
     }
 
-
-    /* ======================================================
-       WARNING NOTE
-       ====================================================== */
-
     .warning-note {
         background: #594817;
-
-        border-left:
-            5px solid #f3cf5b;
-
+        border-left: 5px solid #f3cf5b;
         padding: 15px 18px;
-
         border-radius: 12px;
-
         color: #fffdf0 !important;
     }
 
@@ -356,25 +248,12 @@ st.markdown(
         color: #fffdf0 !important;
     }
 
-
-    /* ======================================================
-       FOOTER
-       ====================================================== */
-
     .footer {
         text-align: center;
-
         color: #b8e7c4 !important;
-
         padding-top: 30px;
-
         font-size: 0.9rem;
     }
-
-
-    /* ======================================================
-       NO BLUR / NO ANIMATION
-       ====================================================== */
 
     *,
     *::before,
@@ -412,7 +291,6 @@ st.caption(
 
 BLYNK_URL = "https://blynk.cloud/external/api/getAll"
 
-
 PIN_MAP = {
     "temperature": "v0",
     "humidity": "v1",
@@ -427,7 +305,6 @@ PIN_MAP = {
     "rain": "v10",
     "safety_pump": "v11",
 }
-
 
 FLOW_SCALE = 10.0
 
@@ -445,7 +322,6 @@ def get_blynk_token():
         pass
 
     if not token:
-
         try:
             token = st.secrets.get(
                 "BLYNK_TOKEN",
@@ -455,14 +331,12 @@ def get_blynk_token():
             pass
 
     if not token:
-
         token = os.getenv(
             "BLYNK_AUTH_TOKEN",
             ""
         )
 
     if not token:
-
         token = os.getenv(
             "BLYNK_TOKEN",
             ""
@@ -1005,48 +879,34 @@ def pump_fault_status(
 # ============================================================
 
 CLASS_NAMES = [
-
     "Apple___Apple_scab",
     "Apple___Black_rot",
     "Apple___Cedar_apple_rust",
     "Apple___healthy",
-
     "Blueberry___healthy",
-
     "Cherry_(including_sour)___Powdery_mildew",
     "Cherry_(including_sour)___healthy",
-
     "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
     "Corn_(maize)___Common_rust_",
     "Corn_(maize)___Northern_Leaf_Blight",
     "Corn_(maize)___healthy",
-
     "Grape___Black_rot",
     "Grape___Esca_(Black_Measles)",
     "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
     "Grape___healthy",
-
     "Orange___Haunglongbing_(Citrus_greening)",
-
     "Peach___Bacterial_spot",
     "Peach___healthy",
-
     "Pepper,_bell___Bacterial_spot",
     "Pepper,_bell___healthy",
-
     "Potato___Early_blight",
     "Potato___Late_blight",
     "Potato___healthy",
-
     "Raspberry___healthy",
-
     "Soybean___healthy",
-
     "Squash___Powdery_mildew",
-
     "Strawberry___Leaf_scorch",
     "Strawberry___healthy",
-
     "Tomato___Bacterial_spot",
     "Tomato___Early_blight",
     "Tomato___Late_blight",
@@ -1071,7 +931,6 @@ def load_disease_model():
         nn.Dropout(
             p=0.2
         ),
-
         nn.Linear(
             model.classifier[1].in_features,
             38
@@ -1092,27 +951,22 @@ def load_disease_model():
 
 transform = transforms.Compose(
     [
-
         transforms.Resize(
             (224, 224)
         ),
-
         transforms.ToTensor(),
-
         transforms.Normalize(
             mean=[
                 0.485,
                 0.456,
                 0.406
             ],
-
             std=[
                 0.229,
                 0.224,
                 0.225
             ]
         ),
-
     ]
 )
 
@@ -1714,7 +1568,9 @@ def live_monitor():
 
         "agricultural_risk": agricultural_score,
 
-        "last_update": datetime.now().strftime(
+        "last_update": datetime.now(
+            ZoneInfo("Asia/Kolkata")
+        ).strftime(
             "%I:%M:%S %p"
         ),
     }
@@ -1737,7 +1593,9 @@ def live_monitor():
 
         st.metric(
             "⏱️ Current System Time",
-            datetime.now().strftime(
+            datetime.now(
+                ZoneInfo("Asia/Kolkata")
+            ).strftime(
                 "%A, %d %B %Y • %I:%M:%S %p"
             )
         )
@@ -2135,7 +1993,6 @@ st.markdown(
 flow_cols = st.columns(5)
 
 flow_steps = [
-
     "📡 MONITOR",
     "🔬 ANALYZE",
     "🧠 DECIDE",
@@ -2169,10 +2026,6 @@ st.write(
 )
 
 
-# ============================================================
-# IMAGE UPLOAD
-# ============================================================
-
 uploaded = st.file_uploader(
     "📤 Upload Crop / Leaf Image",
     type=[
@@ -2186,21 +2039,13 @@ uploaded = st.file_uploader(
 
 disease_label = None
 disease_conf = 0.0
-
 pests = []
-
 nutrient_score = 0
-
 nutrient_level = "Not analyzed"
-
 nutrient_pattern = (
     "Upload an image to analyze."
 )
 
-
-# ============================================================
-# IMAGE ANALYSIS
-# ============================================================
 
 if uploaded is not None:
 
@@ -2281,10 +2126,6 @@ if uploaded is not None:
                 )
 
 
-            # ------------------------------------------------
-            # PEST DETECTION
-            # ------------------------------------------------
-
             st.subheader(
                 "🐛 Pest Detection"
             )
@@ -2330,10 +2171,6 @@ if uploaded is not None:
                     "✅ No pest detected at the current detection threshold."
                 )
 
-
-        # ====================================================
-        # NUTRIENT STRESS
-        # ====================================================
 
         (
             nutrient_score,
@@ -2413,21 +2250,14 @@ if uploaded is not None:
 live = st.session_state.live
 
 temperature = live["temperature"]
-
 humidity = live["humidity"]
-
 soil = live["soil"]
-
 tank = live["tank"]
-
 rain = live["rain"]
-
 waterlog = live["waterlog"]
 
 drought = live["drought"]
-
 heat = live["heat"]
-
 waterlog_score = live["waterlog_score"]
 
 
@@ -2448,9 +2278,7 @@ combined_risk = agricultural_risk(
     disease_conf
     if disease_label
     else 0,
-
     highest_pest_confidence,
-
     nutrient_score
 )
 
@@ -2575,29 +2403,17 @@ st.write(
 questions = [
 
     "Should I irrigate now?",
-
     "Is my soil too dry?",
-
     "Is water available?",
-
     "Is my crop under heat stress?",
-
     "Is waterlogging detected?",
-
     "Is rain detected?",
-
     "Is there a pump fault?",
-
     "What does the disease prediction mean?",
-
     "Are pests detected?",
-
     "Is there visible nutrient stress?",
-
     "What is the drought / water stress?",
-
     "What is the Agricultural Risk Score?",
-
     "What should I do now?",
 
 ]
