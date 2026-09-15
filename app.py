@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 import requests
 import streamlit as st
@@ -25,27 +24,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-
-
-# ============================================================
-# INDIA TIME
-# ============================================================
-
-INDIA_TZ = ZoneInfo("Asia/Kolkata")
-
-
-def india_now():
-    return datetime.now(INDIA_TZ)
-
-
-def current_time():
-    return india_now().strftime("%I:%M:%S %p")
-
-
-def current_datetime():
-    return india_now().strftime(
-        "%A, %d %B %Y • %I:%M:%S %p"
-    )
 
 
 # ============================================================
@@ -1000,18 +978,6 @@ CLASS_NAMES = [
 ]
 
 
-# ============================================================
-# IMPORTANT:
-# MobileNetV2 confidence below this value means that the
-# prediction is not considered a confident match.
-#
-# < 25%  -> Green Gram visual screening
-# >= 25% -> Single best MobileNetV2 prediction
-# ============================================================
-
-MOBILENET_MATCH_THRESHOLD = 25.0
-
-
 @st.cache_resource
 def load_disease_model():
 
@@ -1108,14 +1074,12 @@ def disease_direction(
     label_lower = label.lower()
 
     if "healthy" in label_lower:
-
         return (
             "Direction: No obvious disease pattern detected. "
             "Continue regular crop monitoring."
         )
 
     if confidence < 50:
-
         return (
             "Direction: Prediction is uncertain. "
             "Capture a clearer close-up leaf image and verify the symptom visually."
@@ -1177,38 +1141,7 @@ def disease_predict(image):
 
 
 # ============================================================
-# MOBILE NET MATCH / GREEN GRAM FALLBACK
-# ============================================================
-
-def should_use_green_gram_fallback(
-    disease_label,
-    disease_conf
-):
-    """
-    MobileNetV2 is checked FIRST.
-
-    If the best MobileNetV2 prediction has confidence
-    below 25%, the image is treated as not having a
-    sufficiently confident match to the supported
-    MobileNetV2 classes.
-
-    Then Green Gram visual screening is used as the
-    fallback screening route.
-
-    IMPORTANT:
-    This does NOT prove that the image is Green Gram.
-    It means the image was not confidently matched by
-    the 38-class MobileNetV2 model.
-    """
-
-    if disease_label is None:
-        return True
-
-    return disease_conf < MOBILENET_MATCH_THRESHOLD
-
-
-# ============================================================
-# GREEN GRAM AUTOMATIC VISUAL SCREENING
+# GREEN GRAM FALLBACK
 # ============================================================
 
 def green_gram_health_screening(image):
@@ -1263,56 +1196,68 @@ def green_gram_health_screening(image):
         brown.mean()
     )
 
-    stress_score = int(
+    score = int(
         clamp(
-            yellow_ratio * 110
+            yellow_ratio * 120
             +
-            brown_ratio * 120
+            brown_ratio * 100
             -
-            green_ratio * 25
+            green_ratio * 20
         )
     )
 
-    if stress_score < 20:
+    if score >= 65:
+        level = "High visible stress"
 
-        status = (
-            "🟢 Healthy-looking Green Gram"
+    elif score >= 40:
+        level = "Moderate visible stress"
+
+    elif score >= 20:
+        level = "Mild visible stress"
+
+    else:
+        level = "Low visible stress"
+
+    if (
+        yellow_ratio > 0.22
+        and green_ratio < 0.50
+    ):
+
+        pattern = (
+            "Possible nitrogen-related chlorosis"
         )
 
-        recommendation = (
-            "Continue regular monitoring, irrigation "
-            "and field inspection."
+    elif (
+        yellow_ratio > 0.16
+        and green_ratio < 0.58
+    ):
+
+        pattern = (
+            "Possible magnesium/iron-related chlorosis"
         )
 
-    elif stress_score < 50:
+    elif brown_ratio > 0.18:
 
-        status = (
-            "🟡 Possible Green Gram Stress"
+        pattern = (
+            "Possible potassium-related / edge-burn stress"
         )
 
-        recommendation = (
-            "Inspect the leaves for yellowing, spots, "
-            "curling or pest activity and monitor soil "
-            "moisture and environmental conditions."
+    elif score >= 20:
+
+        pattern = (
+            "General visible nutrient-stress pattern"
         )
 
     else:
 
-        status = (
-            "🔴 High Visible Stress"
-        )
-
-        recommendation = (
-            "Inspect affected leaves and nearby plants "
-            "carefully. Check for disease, pests, nutrient "
-            "problems and water stress before taking "
-            "treatment action."
+        pattern = (
+            "No obvious nutrient-stress pattern"
         )
 
     return (
-        status,
-        stress_score,
-        recommendation
+        score,
+        level,
+        pattern
     )
 
 
@@ -1690,7 +1635,7 @@ if "live" not in st.session_state:
 # LIVE MONITOR
 # ============================================================
 
-@st.fragment(run_every=1)
+@st.fragment(run_every=2)
 def live_monitor():
 
     pin = get_pin_map()
@@ -1808,9 +1753,10 @@ def live_monitor():
 
         "agricultural_risk": agricultural_score,
 
-        "last_update": current_time(),
+        "last_update": datetime.now().strftime(
+            "%I:%M:%S %p"
+        ),
     }
-
 
     # ========================================================
     # SYSTEM TIME
@@ -1829,7 +1775,9 @@ def live_monitor():
 
         st.metric(
             "⏱️ Current System Time",
-            current_datetime()
+            datetime.now().strftime(
+                "%A, %d %B %Y • %I:%M:%S %p"
+            )
         )
 
     with clock_col2:
@@ -1840,7 +1788,6 @@ def live_monitor():
                 "last_update"
             ]
         )
-
 
     # ========================================================
     # LIVE FARM MONITORING
@@ -1921,7 +1868,6 @@ def live_monitor():
 
     ]
 
-
     for col, item in zip(
         row1,
         sensor_items
@@ -1947,7 +1893,6 @@ def live_monitor():
                 st.caption(
                     status[1]
                 )
-
 
     # ========================================================
     # SECOND SENSOR ROW
@@ -2023,7 +1968,6 @@ def live_monitor():
 
     ]
 
-
     for col, item in zip(
         row2,
         second_items
@@ -2050,7 +1994,6 @@ def live_monitor():
                     status[1]
                 )
 
-
     # ========================================================
     # THIRD LIVE STATUS ROW
     # ========================================================
@@ -2067,7 +2010,6 @@ def live_monitor():
                 else "N/A"
             )
         )
-
 
     with row3[1]:
 
@@ -2087,7 +2029,6 @@ def live_monitor():
             pump_fault_reason
         )
 
-
     with row3[2]:
 
         st.metric(
@@ -2103,7 +2044,6 @@ def live_monitor():
                 else "N/A"
             )
         )
-
 
     # ========================================================
     # INTELLIGENT IRRIGATION
@@ -2137,7 +2077,6 @@ def live_monitor():
         st.write(
             irrigation_reason
         )
-
 
     # ========================================================
     # LIVE AGRICULTURAL RISK
@@ -2178,7 +2117,6 @@ def live_monitor():
 
     ]
 
-
     for col, title, score in live_risks:
 
         with col:
@@ -2200,7 +2138,6 @@ def live_monitor():
                     f"{severity(score)} • "
                     f"{risk_direction(score)}"
                 )
-
 
     if not data:
 
@@ -2233,7 +2170,6 @@ flow_steps = [
     "🔔 ALERT",
 ]
 
-
 for col, step in zip(
     flow_cols,
     flow_steps
@@ -2254,14 +2190,8 @@ st.markdown(
 
 st.write(
     "🌿 Upload a clear crop or leaf image for "
-    "AI-assisted crop-health screening, disease analysis, "
-    "pest detection and visual nutrient-stress assessment."
-)
-
-st.caption(
-    "🧠 AI flow: MobileNetV2 is checked first. "
-    "If its best match is below 25% confidence, "
-    "the system switches to Green Gram visual screening."
+    "single-best disease prediction, pest detection "
+    "and visual nutrient-stress assessment."
 )
 
 
@@ -2293,14 +2223,6 @@ nutrient_pattern = (
     "Upload an image to analyze."
 )
 
-green_gram_detected = False
-
-green_gram_status = None
-
-green_gram_score = 0
-
-green_gram_recommendation = None
-
 
 # ============================================================
 # IMAGE ANALYSIS
@@ -2322,7 +2244,6 @@ if uploaded is not None:
             )
         )
 
-
         with image_col:
 
             st.subheader(
@@ -2335,168 +2256,119 @@ if uploaded is not None:
                 use_container_width=True
             )
 
-
-        # ====================================================
-        # STEP 1 — MOBILENETV2 FIRST
-        # ====================================================
-
-        disease_label, disease_conf = (
-            disease_predict(
-                image
-            )
-        )
-
-
-        # ====================================================
-        # STEP 2 — CHECK 25% THRESHOLD
-        # ====================================================
-
-        green_gram_detected = (
-            should_use_green_gram_fallback(
-                disease_label,
-                disease_conf
-            )
-        )
-
-
         with result_col:
 
+            st.subheader(
+                "🦠 Leaf Disease Prediction"
+            )
+
             # =================================================
-            # MOBILE NET LOW CONFIDENCE
-            # → GREEN GRAM FALLBACK
+            # MOBILENETV2 FIRST
             # =================================================
 
-            if green_gram_detected:
-
-                st.subheader(
-                    "🌱 Green Gram AI-Assisted Health Screening"
-                )
-
-                if disease_label is None:
-
-                    st.info(
-                        "ℹ️ MobileNetV2 could not produce a valid prediction. "
-                        "The system is switching to Green Gram visual screening."
-                    )
-
-                else:
-
-                    st.info(
-                        f"ℹ️ MobileNetV2 best match was "
-                        f"{disease_conf:.1f}% confidence, "
-                        f"which is below the {MOBILENET_MATCH_THRESHOLD:.0f}% "
-                        "match threshold. The system is switching to "
-                        "Green Gram visual screening."
-                    )
-
-
-                (
-                    green_gram_status,
-                    green_gram_score,
-                    green_gram_recommendation
-                ) = green_gram_health_screening(
+            disease_label, disease_conf = (
+                disease_predict(
                     image
                 )
+            )
 
+            # =================================================
+            # NORMAL MOBILENETV2 PREDICTION
+            # =================================================
 
-                if green_gram_score < 20:
+            if disease_label is not None:
 
-                    st.success(
-                        green_gram_status
-                    )
+                readable = clean_label(
+                    disease_label
+                )
 
-                elif green_gram_score < 50:
-
-                    st.warning(
-                        green_gram_status
-                    )
-
-                else:
-
-                    st.error(
-                        green_gram_status
-                    )
-
+                st.success(
+                    readable
+                )
 
                 st.metric(
-                    "🌿 Green Gram Visible Stress Score",
-                    f"{green_gram_score}/100"
-                )
-
-                st.progress(
-                    green_gram_score
-                )
-
-                st.write(
-                    green_gram_recommendation
+                    "🎯 Best Prediction Confidence",
+                    f"{disease_conf:.1f}%"
                 )
 
                 st.caption(
-                    "AI-assisted visual screening based on "
-                    "visible leaf characteristics. This fallback "
-                    "does not prove that the uploaded image is Green Gram. "
-                    "Confirm crop identity and suspected disease, pest "
-                    "or nutrient problems through field inspection."
+                    disease_confidence(
+                        disease_conf
+                    )
                 )
 
-                # Do not use low-confidence MobileNet prediction
-                # as the final disease result.
-                disease_label = None
-                disease_conf = 0.0
-
+                st.write(
+                    disease_direction(
+                        readable,
+                        disease_conf
+                    )
+                )
 
             # =================================================
-            # MOBILE NET CONFIDENT MATCH
+            # ONLY IF MODEL RETURNS NO PREDICTION
             # =================================================
 
             else:
 
-                st.subheader(
-                    "🦠 Leaf Disease Prediction"
+                st.info(
+                    "🌿 MobileNetV2 could not produce a prediction. "
+                    "Switching to Green Gram AI-assisted visual screening."
                 )
 
-                if disease_label:
+                (
+                    gg_score,
+                    gg_level,
+                    gg_pattern
+                ) = green_gram_health_screening(
+                    image
+                )
 
-                    readable = clean_label(
-                        disease_label
-                    )
+                st.subheader(
+                    "🌱 Green Gram Visual Screening"
+                )
 
-                    st.success(
-                        f"🌿 Best MobileNetV2 Match: {readable}"
-                    )
+                gg_cols = st.columns(3)
 
-                    st.metric(
-                        "🎯 Best Prediction Confidence",
-                        f"{disease_conf:.1f}%"
-                    )
+                with gg_cols[0]:
 
-                    st.caption(
-                        disease_confidence(
-                            disease_conf
+                    with st.container(
+                        border=True
+                    ):
+
+                        st.metric(
+                            "Visual Health Score",
+                            f"{100 - gg_score}/100"
                         )
-                    )
 
-                    st.write(
-                        disease_direction(
-                            readable,
-                            disease_conf
+                with gg_cols[1]:
+
+                    with st.container(
+                        border=True
+                    ):
+
+                        st.metric(
+                            "Visible Stress",
+                            gg_level
                         )
-                    )
 
-                    st.caption(
-                        f"MobileNetV2 accepted this best match "
-                        f"because confidence is ≥ "
-                        f"{MOBILENET_MATCH_THRESHOLD:.0f}%."
-                    )
+                with gg_cols[2]:
 
-                else:
+                    with st.container(
+                        border=True
+                    ):
 
-                    st.error(
-                        "Disease model could not analyze this image. "
-                        "Check that model/mobilenetv2_plant.pth exists "
-                        "and matches the 38-class model architecture."
-                    )
+                        st.write(
+                            "**Visual Pattern**"
+                        )
 
+                        st.write(
+                            gg_pattern
+                        )
+
+                st.caption(
+                    "This is an AI-assisted visual screening result, "
+                    "not a confirmed Green Gram disease diagnosis."
+                )
 
             # =================================================
             # PEST DETECTION
@@ -2546,7 +2418,6 @@ if uploaded is not None:
                 st.success(
                     "✅ No pest detected at the current detection threshold."
                 )
-
 
         # ====================================================
         # NUTRIENT STRESS
@@ -2608,13 +2479,11 @@ if uploaded is not None:
                     nutrient_pattern
                 )
 
-
         st.warning(
             "🌿 Visual nutrient assessment is a screening tool. "
             "It does not directly measure soil or leaf nutrient concentration. "
             "Confirm suspected nutrient deficiency with appropriate agricultural testing."
         )
-
 
     except Exception as error:
 
@@ -2662,13 +2531,10 @@ combined_risk = agricultural_risk(
     heat,
     waterlog_score,
     tank,
-
     disease_conf
     if disease_label
     else 0,
-
     highest_pest_confidence,
-
     nutrient_score
 )
 
@@ -2872,7 +2738,6 @@ if ask:
 
         q = question.lower()
 
-
         if (
             "irrigat" in q
             or "water now" in q
@@ -2896,7 +2761,6 @@ if ask:
                 f"{reason}"
             )
 
-
         elif "soil" in q:
 
             soil_state = soil_status(
@@ -2908,7 +2772,6 @@ if ask:
                 f"{soil_state[0]}. "
                 f"{soil_state[1]}"
             )
-
 
         elif (
             "tank" in q
@@ -2926,7 +2789,6 @@ if ask:
                 f"{tank_state[1]}"
             )
 
-
         elif (
             "heat" in q
             or "temperature" in q
@@ -2938,7 +2800,6 @@ if ask:
                 f"({severity(heat)}). "
                 "Monitor crop temperature and water availability."
             )
-
 
         elif (
             "waterlogging" in q
@@ -2955,7 +2816,6 @@ if ask:
                 f"{state[1]}"
             )
 
-
         elif "rain" in q:
 
             state = rain_status(
@@ -2967,7 +2827,6 @@ if ask:
                 f"{state[0]}. "
                 f"{state[1]}"
             )
-
 
         elif "pump" in q:
 
@@ -2982,7 +2841,6 @@ if ask:
                 f"**Pump health:** "
                 f"{fault}. {reason}"
             )
-
 
         elif (
             "disease" in q
@@ -3002,21 +2860,12 @@ if ask:
                     f"{disease_direction(readable, disease_conf)}"
                 )
 
-            elif green_gram_detected:
-
-                answer = (
-                    f"**Green Gram screening:** "
-                    f"{green_gram_status}. "
-                    f"{green_gram_recommendation}"
-                )
-
             else:
 
                 answer = (
                     "Upload a clear crop or leaf image "
                     "to perform the disease prediction."
                 )
-
 
         elif "pest" in q:
 
@@ -3035,7 +2884,6 @@ if ask:
                     "No pest was detected at the current model threshold."
                 )
 
-
         elif (
             "nutrient" in q
             or "deficien" in q
@@ -3048,7 +2896,6 @@ if ask:
                 f"{nutrient_pattern}"
             )
 
-
         elif (
             "drought" in q
             or "water stress" in q
@@ -3059,7 +2906,6 @@ if ask:
                 f"{drought}/100 "
                 f"({severity(drought)})."
             )
-
 
         elif (
             "risk" in q
@@ -3073,7 +2919,6 @@ if ask:
                 "This combines environmental, water and crop-health signals."
             )
 
-
         elif (
             "what should i do" in q
             or "what can i do" in q
@@ -3086,7 +2931,6 @@ if ask:
                 recommendations[0]
             )
 
-
         else:
 
             answer = (
@@ -3095,7 +2939,6 @@ if ask:
                 "leaf disease, pests, nutrient stress, drought, heat "
                 "and overall agricultural risk."
             )
-
 
         st.success(
             "🌱 Farmer Assistant"
@@ -3123,7 +2966,6 @@ capabilities = [
     "🌊 Waterlogging protection",
     "🚰 Flow-based pump fault detection",
     "📱 Blynk IoT monitoring",
-    "🌱 Green Gram AI-assisted health screening",
     "🦠 Single-best leaf disease prediction",
     "🐛 Pest detection",
     "🌿 Nutrient-stress assessment",
@@ -3170,7 +3012,6 @@ st.info(
     "🧠 Intelligent Decision Engine → "
     "💧 Irrigation & Protection → "
     "🔬 AI Leaf Analysis → "
-    "🌱 Green Gram Health Screening → "
     "🐛 Pest Analysis → "
     "🌿 Nutrient Screening → "
     "🏜️ Drought + 🌡️ Heat Analysis → "
@@ -3191,10 +3032,6 @@ st.markdown(
     <b>🛡️ Important Agricultural Safety Note</b><br><br>
 
     AI disease and pest outputs are decision-support results.
-    Green Gram visual health screening is an AI-assisted screening
-    method based on visible image characteristics and does not provide
-    definitive disease diagnosis.
-
     Visual nutrient assessment is only a screening method and does not
     directly measure soil nutrient concentration.
 
