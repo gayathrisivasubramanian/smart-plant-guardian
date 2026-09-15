@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import requests
 import streamlit as st
@@ -24,6 +25,29 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+# ============================================================
+# INDIA TIME
+# ============================================================
+
+INDIA_TZ = ZoneInfo("Asia/Kolkata")
+
+
+def india_now():
+    return datetime.now(INDIA_TZ)
+
+
+def current_time():
+    return india_now().strftime(
+        "%I:%M:%S %p"
+    )
+
+
+def current_datetime():
+    return india_now().strftime(
+        "%A, %d %B %Y • %I:%M:%S %p"
+    )
 
 
 # ============================================================
@@ -1259,20 +1283,6 @@ def is_green_gram_image(
     disease_conf
 ):
 
-    """
-    Automatic screening decision.
-
-    Green Gram is not one of the 38 classes in the
-    MobileNetV2 disease model.
-
-    Therefore, when the existing model is uncertain,
-    the image is treated as a candidate for the
-    Green Gram visual-health screening.
-
-    This avoids showing a confident unsupported
-    disease prediction for an unsupported crop.
-    """
-
     if disease_label is None:
         return True
 
@@ -1656,7 +1666,7 @@ if "live" not in st.session_state:
 # LIVE MONITOR
 # ============================================================
 
-@st.fragment(run_every=2)
+@st.fragment(run_every=1)
 def live_monitor():
 
     pin = get_pin_map()
@@ -1774,9 +1784,7 @@ def live_monitor():
 
         "agricultural_risk": agricultural_score,
 
-        "last_update": datetime.now().strftime(
-            "%I:%M:%S %p"
-        ),
+        "last_update": current_time(),
     }
 
 
@@ -1797,9 +1805,7 @@ def live_monitor():
 
         st.metric(
             "⏱️ Current System Time",
-            datetime.now().strftime(
-                "%A, %d %B %Y • %I:%M:%S %p"
-            )
+            current_datetime()
         )
 
     with clock_col2:
@@ -2300,20 +2306,12 @@ if uploaded is not None:
             )
 
 
-        # ====================================================
-        # FIRST: EXISTING DISEASE MODEL
-        # ====================================================
-
         disease_label, disease_conf = (
             disease_predict(
                 image
             )
         )
 
-
-        # ====================================================
-        # AUTOMATIC GREEN GRAM DECISION
-        # ====================================================
 
         green_gram_detected = is_green_gram_image(
             image,
@@ -2375,7 +2373,6 @@ if uploaded is not None:
                     "disease, pest or nutrient problems through field inspection."
                 )
 
-                # Prevent unsupported MobileNet result
                 disease_label = None
                 disease_conf = 0.0
 
