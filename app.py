@@ -49,13 +49,11 @@ st.markdown(
         color: #ffffff;
     }
 
-
     .block-container {
         max-width: 1450px;
         padding-top: 1.2rem;
         padding-bottom: 3rem;
     }
-
 
     body,
     p,
@@ -77,7 +75,6 @@ st.markdown(
         color: #f5fff7;
     }
 
-
     [data-testid="stAppViewContainer"] h1 {
         color: #ffffff !important;
         font-size: 2.4rem !important;
@@ -88,7 +85,6 @@ st.markdown(
     [data-testid="stAppViewContainer"] h2 {
         color: #e1ffe9 !important;
     }
-
 
     .section-heading {
         font-size: 1.45rem;
@@ -108,7 +104,6 @@ st.markdown(
         border-radius: 8px;
     }
 
-
     [data-testid="stVerticalBlockBorderWrapper"] {
         background:
             rgba(7, 52, 30, 0.90) !important;
@@ -121,7 +116,6 @@ st.markdown(
         box-shadow:
             0 8px 25px rgba(0, 0, 0, 0.23);
     }
-
 
     [data-testid="stMetricLabel"] {
         color: #c7f5d2 !important;
@@ -137,12 +131,10 @@ st.markdown(
         color: #a9f2bb !important;
     }
 
-
     .stCaption,
     [data-testid="stCaptionContainer"] {
         color: #bce9c8 !important;
     }
-
 
     input,
     textarea {
@@ -158,7 +150,6 @@ st.markdown(
         color: #607566 !important;
     }
 
-
     [data-baseweb="select"] > div {
         background-color: #f4fff6 !important;
         color: #102719 !important;
@@ -170,7 +161,6 @@ st.markdown(
     [data-baseweb="select"] span {
         color: #102719 !important;
     }
-
 
     .stButton > button {
         background:
@@ -204,7 +194,6 @@ st.markdown(
         color: #ffffff !important;
     }
 
-
     [data-testid="stFileUploader"] {
         background:
             rgba(8, 55, 32, 0.94) !important;
@@ -231,7 +220,6 @@ st.markdown(
         color: #ffffff !important;
     }
 
-
     [data-testid="stAlert"] {
         border-radius: 12px !important;
     }
@@ -239,7 +227,6 @@ st.markdown(
     [data-testid="stAlert"] p {
         color: #ffffff !important;
     }
-
 
     [data-testid="stProgressBar"] > div {
         background-color: #174c2d !important;
@@ -249,11 +236,9 @@ st.markdown(
         background-color: #71df91 !important;
     }
 
-
     img {
         border-radius: 14px;
     }
-
 
     .recommendation {
         background:
@@ -282,7 +267,6 @@ st.markdown(
         color: #ffffff !important;
     }
 
-
     .warning-note {
         background: #594817;
 
@@ -300,7 +284,6 @@ st.markdown(
         color: #fffdf0 !important;
     }
 
-
     .footer {
         text-align: center;
 
@@ -310,7 +293,6 @@ st.markdown(
 
         font-size: 0.9rem;
     }
-
 
     *,
     *::before,
@@ -1159,6 +1141,148 @@ def disease_predict(image):
 
 
 # ============================================================
+# GREEN GRAM AUTOMATIC VISUAL SCREENING
+# ============================================================
+
+def green_gram_health_screening(image):
+
+    arr = np.asarray(
+        image.convert(
+            "RGB"
+        ).resize(
+            (224, 224)
+        )
+    ).astype(
+        np.float32
+    )
+
+    r = arr[:, :, 0]
+    g = arr[:, :, 1]
+    b = arr[:, :, 2]
+
+    green = (
+        (g > r * 1.05)
+        &
+        (g > b * 1.03)
+    )
+
+    yellow = (
+        (r > b * 1.18)
+        &
+        (g > b * 1.12)
+        &
+        (r > 70)
+    )
+
+    brown = (
+        (r > g * 1.12)
+        &
+        (g > b * 1.05)
+        &
+        (r > 70)
+        &
+        (g < 170)
+    )
+
+    green_ratio = float(
+        green.mean()
+    )
+
+    yellow_ratio = float(
+        yellow.mean()
+    )
+
+    brown_ratio = float(
+        brown.mean()
+    )
+
+    stress_score = int(
+        clamp(
+            yellow_ratio * 110
+            +
+            brown_ratio * 120
+            -
+            green_ratio * 25
+        )
+    )
+
+    if stress_score < 20:
+
+        status = (
+            "🟢 Healthy-looking Green Gram"
+        )
+
+        recommendation = (
+            "Continue regular monitoring, irrigation "
+            "and field inspection."
+        )
+
+    elif stress_score < 50:
+
+        status = (
+            "🟡 Possible Green Gram Stress"
+        )
+
+        recommendation = (
+            "Inspect the leaves for yellowing, spots, "
+            "curling or pest activity and monitor soil "
+            "moisture and environmental conditions."
+        )
+
+    else:
+
+        status = (
+            "🔴 High Visible Stress"
+        )
+
+        recommendation = (
+            "Inspect affected leaves and nearby plants "
+            "carefully. Check for disease, pests, nutrient "
+            "problems and water stress before taking "
+            "treatment action."
+        )
+
+    return (
+        status,
+        stress_score,
+        recommendation
+    )
+
+
+# ============================================================
+# AUTOMATIC GREEN GRAM DETECTION
+# ============================================================
+
+def is_green_gram_image(
+    image,
+    disease_label,
+    disease_conf
+):
+
+    """
+    Automatic screening decision.
+
+    Green Gram is not one of the 38 classes in the
+    MobileNetV2 disease model.
+
+    Therefore, when the existing model is uncertain,
+    the image is treated as a candidate for the
+    Green Gram visual-health screening.
+
+    This avoids showing a confident unsupported
+    disease prediction for an unsupported crop.
+    """
+
+    if disease_label is None:
+        return True
+
+    if disease_conf < 45:
+        return True
+
+    return False
+
+
+# ============================================================
 # PEST MODEL
 # ============================================================
 
@@ -1348,112 +1472,6 @@ def nutrient_assessment(image):
 
 
 # ============================================================
-# GREEN GRAM VISUAL HEALTH SCREENING
-# ============================================================
-
-def green_gram_health_screening(image):
-
-    arr = np.asarray(
-        image.convert(
-            "RGB"
-        ).resize(
-            (224, 224)
-        )
-    ).astype(
-        np.float32
-    )
-
-    r = arr[:, :, 0]
-    g = arr[:, :, 1]
-    b = arr[:, :, 2]
-
-    green = (
-        (g > r * 1.05)
-        &
-        (g > b * 1.03)
-    )
-
-    yellow = (
-        (r > b * 1.18)
-        &
-        (g > b * 1.12)
-        &
-        (r > 70)
-    )
-
-    brown = (
-        (r > g * 1.12)
-        &
-        (g > b * 1.05)
-        &
-        (r > 70)
-        &
-        (g < 170)
-    )
-
-    green_ratio = float(
-        green.mean()
-    )
-
-    yellow_ratio = float(
-        yellow.mean()
-    )
-
-    brown_ratio = float(
-        brown.mean()
-    )
-
-    stress_score = int(
-        clamp(
-            yellow_ratio * 110
-            +
-            brown_ratio * 120
-            -
-            green_ratio * 25
-        )
-    )
-
-    if stress_score < 20:
-
-        status = (
-            "🟢 Healthy-looking Green Gram"
-        )
-
-        recommendation = (
-            "Continue regular monitoring, irrigation and field inspection."
-        )
-
-    elif stress_score < 50:
-
-        status = (
-            "🟡 Possible Green Gram Stress"
-        )
-
-        recommendation = (
-            "Inspect the leaves for yellowing, spots, curling or pest activity "
-            "and monitor soil moisture and environmental conditions."
-        )
-
-    else:
-
-        status = (
-            "🔴 High Visible Stress"
-        )
-
-        recommendation = (
-            "Inspect affected leaves and nearby plants carefully. "
-            "Check for disease, pests, nutrient problems and water stress "
-            "before taking treatment action."
-        )
-
-    return (
-        status,
-        stress_score,
-        recommendation
-    )
-
-
-# ============================================================
 # FARMER RECOMMENDATION ENGINE
 # ============================================================
 
@@ -1470,8 +1488,7 @@ def generate_farmer_recommendation(
     disease_label=None,
     disease_conf=0,
     pests=None,
-    nutrient_score=0,
-    green_gram_status=None
+    nutrient_score=0
 ):
 
     recommendations = []
@@ -1550,14 +1567,7 @@ def generate_farmer_recommendation(
             "🌊 Waterlogging is detected. Stop irrigation and improve drainage."
         )
 
-    if green_gram_status:
-
-        recommendations.append(
-            f"🌱 Green Gram screening: {green_gram_status}. "
-            "Use field inspection to confirm the cause of visible stress."
-        )
-
-    elif disease_label:
+    if disease_label:
 
         if "healthy" not in disease_label.lower():
 
@@ -2220,20 +2230,6 @@ st.write(
 
 
 # ============================================================
-# CROP SELECTION
-# ============================================================
-
-crop_type = st.selectbox(
-    "🌱 Select Crop",
-    [
-        "Auto Detect / Existing Crops",
-        "Green Gram"
-    ],
-    key="crop_type_selection"
-)
-
-
-# ============================================================
 # IMAGE UPLOAD
 # ============================================================
 
@@ -2261,11 +2257,13 @@ nutrient_pattern = (
     "Upload an image to analyze."
 )
 
+green_gram_detected = False
+
 green_gram_status = None
 
 green_gram_score = 0
 
-green_gram_recommendation = ""
+green_gram_recommendation = None
 
 
 # ============================================================
@@ -2302,16 +2300,34 @@ if uploaded is not None:
             )
 
 
+        # ====================================================
+        # FIRST: EXISTING DISEASE MODEL
+        # ====================================================
+
+        disease_label, disease_conf = (
+            disease_predict(
+                image
+            )
+        )
+
+
+        # ====================================================
+        # AUTOMATIC GREEN GRAM DECISION
+        # ====================================================
+
+        green_gram_detected = is_green_gram_image(
+            image,
+            disease_label,
+            disease_conf
+        )
+
+
         with result_col:
 
-            # =================================================
-            # GREEN GRAM SCREENING
-            # =================================================
-
-            if crop_type == "Green Gram":
+            if green_gram_detected:
 
                 st.subheader(
-                    "🌱 Green Gram Health Screening"
+                    "🌱 Green Gram AI-Assisted Health Screening"
                 )
 
                 (
@@ -2341,7 +2357,7 @@ if uploaded is not None:
                     )
 
                 st.metric(
-                    "🌿 Visible Stress Score",
+                    "🌿 Green Gram Visible Stress Score",
                     f"{green_gram_score}/100"
                 )
 
@@ -2354,25 +2370,20 @@ if uploaded is not None:
                 )
 
                 st.caption(
-                    "AI-assisted visual screening based on visible leaf characteristics. "
-                    "It is not a specific disease diagnosis."
+                    "AI-assisted visual screening based on "
+                    "visible leaf characteristics. Confirm suspected "
+                    "disease, pest or nutrient problems through field inspection."
                 )
 
+                # Prevent unsupported MobileNet result
+                disease_label = None
+                disease_conf = 0.0
 
-            # =================================================
-            # EXISTING CROP DISEASE MODEL
-            # =================================================
 
             else:
 
                 st.subheader(
                     "🦠 Leaf Disease Prediction"
-                )
-
-                disease_label, disease_conf = (
-                    disease_predict(
-                        image
-                    )
                 )
 
                 if disease_label:
@@ -2412,9 +2423,9 @@ if uploaded is not None:
                     )
 
 
-            # =================================================
+            # ------------------------------------------------
             # PEST DETECTION
-            # =================================================
+            # ------------------------------------------------
 
             st.subheader(
                 "🐛 Pest Detection"
@@ -2576,6 +2587,7 @@ combined_risk = agricultural_risk(
     heat,
     waterlog_score,
     tank,
+
     disease_conf
     if disease_label
     else 0,
@@ -2672,8 +2684,7 @@ recommendations = (
         disease_label=disease_label,
         disease_conf=disease_conf,
         pests=pests,
-        nutrient_score=nutrient_score,
-        green_gram_status=green_gram_status
+        nutrient_score=nutrient_score
     )
 )
 
@@ -2899,53 +2910,11 @@ if ask:
 
 
         elif (
-            "green gram" in q
-            or "mung bean" in q
-            or "mungbean" in q
-        ):
-
-            if green_gram_status:
-
-                answer = (
-                    f"**Green Gram screening:** "
-                    f"{green_gram_status}. "
-                    f"Visible stress score: "
-                    f"{green_gram_score}/100. "
-                    f"{green_gram_recommendation}"
-                )
-
-            else:
-
-                answer = (
-                    "Select Green Gram and upload a clear "
-                    "Green Gram leaf or crop image for visual health screening."
-                )
-
-
-        elif (
             "disease" in q
             or "leaf" in q
         ):
 
-            if crop_type == "Green Gram":
-
-                if green_gram_status:
-
-                    answer = (
-                        f"**Green Gram health screening:** "
-                        f"{green_gram_status}. "
-                        f"This is visual screening rather than a specific disease diagnosis. "
-                        f"{green_gram_recommendation}"
-                    )
-
-                else:
-
-                    answer = (
-                        "Select Green Gram and upload a clear Green Gram image "
-                        "for visual health screening."
-                    )
-
-            elif disease_label:
+            if disease_label:
 
                 readable = clean_label(
                     disease_label
@@ -2956,6 +2925,14 @@ if ask:
                     f"{readable} "
                     f"({disease_conf:.1f}% confidence). "
                     f"{disease_direction(readable, disease_conf)}"
+                )
+
+            elif green_gram_detected:
+
+                answer = (
+                    f"**Green Gram:** "
+                    f"{green_gram_status}. "
+                    f"{green_gram_recommendation}"
                 )
 
             else:
@@ -3040,8 +3017,8 @@ if ask:
             answer = (
                 "I can help with irrigation, soil moisture, "
                 "water availability, rain, waterlogging, pump health, "
-                "Green Gram health screening, leaf disease, pests, "
-                "nutrient stress, drought, heat and overall agricultural risk."
+                "leaf disease, pests, nutrient stress, drought, heat "
+                "and overall agricultural risk."
             )
 
 
@@ -3118,6 +3095,7 @@ st.info(
     "🧠 Intelligent Decision Engine → "
     "💧 Irrigation & Protection → "
     "🔬 AI Leaf Analysis → "
+    "🌱 Green Gram Health Screening → "
     "🐛 Pest Analysis → "
     "🌿 Nutrient Screening → "
     "🏜️ Drought + 🌡️ Heat Analysis → "
@@ -3138,9 +3116,9 @@ st.markdown(
     <b>🛡️ Important Agricultural Safety Note</b><br><br>
 
     AI disease and pest outputs are decision-support results.
-    Green Gram health screening is an AI-assisted visual screening method
-    based on visible leaf characteristics and does not provide a confirmed
-    disease diagnosis.
+    Green Gram visual health screening is an AI-assisted screening
+    method based on visible image characteristics and does not provide
+    definitive disease diagnosis.
 
     Visual nutrient assessment is only a screening method and does not
     directly measure soil nutrient concentration.
