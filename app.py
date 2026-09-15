@@ -39,9 +39,7 @@ def india_now():
 
 
 def current_time():
-    return india_now().strftime(
-        "%I:%M:%S %p"
-    )
+    return india_now().strftime("%I:%M:%S %p")
 
 
 def current_datetime():
@@ -486,6 +484,7 @@ def get_value(data, pin):
 
     try:
         return float(raw)
+
     except Exception:
         return None
 
@@ -1165,7 +1164,69 @@ def disease_predict(image):
 
 
 # ============================================================
-# GREEN GRAM AUTOMATIC VISUAL SCREENING
+# AUTOMATIC CROP MATCHING
+# ============================================================
+
+SUPPORTED_CROP_PREFIXES = [
+
+    "Apple",
+    "Blueberry",
+    "Cherry",
+    "Corn",
+    "Grape",
+    "Orange",
+    "Peach",
+    "Pepper",
+    "Potato",
+    "Raspberry",
+    "Soybean",
+    "Squash",
+    "Strawberry",
+    "Tomato",
+
+]
+
+DISEASE_MODEL_MATCH_THRESHOLD = 60.0
+
+
+def get_crop_from_label(label):
+
+    if not label:
+        return None
+
+    for crop in SUPPORTED_CROP_PREFIXES:
+
+        if label.startswith(
+            crop + "___"
+        ):
+
+            return crop
+
+    return None
+
+
+def is_green_gram_image(
+    disease_label,
+    disease_conf
+):
+
+    crop = get_crop_from_label(
+        disease_label
+    )
+
+    # No supported crop matched
+    if crop is None:
+        return True
+
+    # Supported crop prediction is too uncertain
+    if disease_conf < DISEASE_MODEL_MATCH_THRESHOLD:
+        return True
+
+    return False
+
+
+# ============================================================
+# GREEN GRAM VISUAL HEALTH SCREENING
 # ============================================================
 
 def green_gram_health_screening(image):
@@ -1271,25 +1332,6 @@ def green_gram_health_screening(image):
         stress_score,
         recommendation
     )
-
-
-# ============================================================
-# AUTOMATIC GREEN GRAM DETECTION
-# ============================================================
-
-def is_green_gram_image(
-    image,
-    disease_label,
-    disease_conf
-):
-
-    if disease_label is None:
-        return True
-
-    if disease_conf < 45:
-        return True
-
-    return False
 
 
 # ============================================================
@@ -2207,6 +2249,7 @@ flow_steps = [
     "🧠 DECIDE",
     "⚙️ ACT",
     "🔔 ALERT",
+
 ]
 
 
@@ -2306,6 +2349,10 @@ if uploaded is not None:
             )
 
 
+        # ----------------------------------------------------
+        # FIRST: DOWNLOADED DISEASE MODEL
+        # ----------------------------------------------------
+
         disease_label, disease_conf = (
             disease_predict(
                 image
@@ -2313,14 +2360,23 @@ if uploaded is not None:
         )
 
 
-        green_gram_detected = is_green_gram_image(
-            image,
-            disease_label,
-            disease_conf
+        # ----------------------------------------------------
+        # AUTOMATIC FALLBACK
+        # ----------------------------------------------------
+
+        green_gram_detected = (
+            is_green_gram_image(
+                disease_label,
+                disease_conf
+            )
         )
 
 
         with result_col:
+
+            # =================================================
+            # GREEN GRAM FALLBACK
+            # =================================================
 
             if green_gram_detected:
 
@@ -2335,6 +2391,7 @@ if uploaded is not None:
                 ) = green_gram_health_screening(
                     image
                 )
+
 
                 if green_gram_score < 20:
 
@@ -2354,28 +2411,38 @@ if uploaded is not None:
                         green_gram_status
                     )
 
+
                 st.metric(
                     "🌿 Green Gram Visible Stress Score",
                     f"{green_gram_score}/100"
                 )
 
+
                 st.progress(
                     green_gram_score
                 )
+
 
                 st.write(
                     green_gram_recommendation
                 )
 
+
                 st.caption(
-                    "AI-assisted visual screening based on "
-                    "visible leaf characteristics. Confirm suspected "
-                    "disease, pest or nutrient problems through field inspection."
+                    "The downloaded 38-class disease model "
+                    "did not produce a sufficiently confident "
+                    "supported-crop match. The image is therefore "
+                    "handled using Green Gram visual health screening."
                 )
+
 
                 disease_label = None
                 disease_conf = 0.0
 
+
+            # =================================================
+            # SUPPORTED CROP
+            # =================================================
 
             else:
 
@@ -2389,8 +2456,16 @@ if uploaded is not None:
                         disease_label
                     )
 
+                    crop_name = get_crop_from_label(
+                        disease_label
+                    )
+
                     st.success(
-                        readable
+                        f"🌿 Crop: {crop_name}"
+                    )
+
+                    st.write(
+                        f"**Disease / Health Result:** {readable}"
                     )
 
                     st.metric(
@@ -2420,9 +2495,9 @@ if uploaded is not None:
                     )
 
 
-            # ------------------------------------------------
+            # =================================================
             # PEST DETECTION
-            # ------------------------------------------------
+            # =================================================
 
             st.subheader(
                 "🐛 Pest Detection"
@@ -2431,6 +2506,7 @@ if uploaded is not None:
             pests = pest_predict(
                 image
             )
+
 
             if pests:
 
@@ -2482,13 +2558,16 @@ if uploaded is not None:
             image
         )
 
+
         st.subheader(
             "🌿 Visual Nutrient-Stress Assessment"
         )
 
+
         nutrient_cols = st.columns(
             3
         )
+
 
         with nutrient_cols[0]:
 
@@ -2505,6 +2584,7 @@ if uploaded is not None:
                     nutrient_score
                 )
 
+
         with nutrient_cols[1]:
 
             with st.container(
@@ -2515,6 +2595,7 @@ if uploaded is not None:
                     "Stress Level",
                     nutrient_level
                 )
+
 
         with nutrient_cols[2]:
 
@@ -2604,7 +2685,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 risk_cols = st.columns(4)
+
 
 final_scores = [
 
@@ -2667,6 +2750,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 recommendations = (
     generate_farmer_recommendation(
         soil=soil,
@@ -2706,6 +2790,7 @@ st.markdown(
     '<div class="section-heading">🌱 Farmer Help Assistant</div>',
     unsafe_allow_html=True
 )
+
 
 st.write(
     "👨‍🌾 Select a common question or type your own question."
@@ -2774,6 +2859,7 @@ if ask:
 
     question = typed_question.strip()
 
+
     if not question:
 
         if (
@@ -2784,11 +2870,13 @@ if ask:
 
             question = selected_question
 
+
     if not question:
 
         st.warning(
             "Please select a question or type your own question."
         )
+
 
     else:
 
@@ -3037,22 +3125,37 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 capabilities = [
 
     "📡 Multi-sensor ESP32 monitoring",
+
     "💧 Intelligent irrigation",
+
     "🌧️ Rain protection",
+
     "🌊 Waterlogging protection",
+
     "🚰 Flow-based pump fault detection",
+
     "📱 Blynk IoT monitoring",
-    "🌱 Green Gram AI-assisted health screening",
-    "🦠 Single-best leaf disease prediction",
+
+    "🌱 Automatic Green Gram fallback screening",
+
+    "🦠 38-class leaf disease prediction",
+
     "🐛 Pest detection",
+
     "🌿 Nutrient-stress assessment",
+
     "🏜️ Drought / water-stress scoring",
+
     "🌡️ Heat-stress scoring",
+
     "📊 Agricultural Risk Score",
+
     "👨‍🌾 Farmer recommendation engine",
+
     "💬 Farmer Help Assistant",
 
 ]
@@ -3085,6 +3188,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 st.info(
     "📡 ESP32 Sensors → "
     "☁️ Blynk IoT → "
@@ -3092,7 +3196,7 @@ st.info(
     "🧠 Intelligent Decision Engine → "
     "💧 Irrigation & Protection → "
     "🔬 AI Leaf Analysis → "
-    "🌱 Green Gram Health Screening → "
+    "🌱 Green Gram Fallback Screening → "
     "🐛 Pest Analysis → "
     "🌿 Nutrient Screening → "
     "🏜️ Drought + 🌡️ Heat Analysis → "
@@ -3113,9 +3217,12 @@ st.markdown(
     <b>🛡️ Important Agricultural Safety Note</b><br><br>
 
     AI disease and pest outputs are decision-support results.
-    Green Gram visual health screening is an AI-assisted screening
-    method based on visible image characteristics and does not provide
-    definitive disease diagnosis.
+    When the downloaded 38-class disease model does not produce
+    a sufficiently confident supported-crop match, the system
+    uses Green Gram visual health screening as a fallback.
+
+    Green Gram visual screening is based on visible image
+    characteristics and does not provide definitive disease diagnosis.
 
     Visual nutrient assessment is only a screening method and does not
     directly measure soil nutrient concentration.
