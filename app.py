@@ -484,7 +484,6 @@ def get_value(data, pin):
 
     try:
         return float(raw)
-
     except Exception:
         return None
 
@@ -1001,6 +1000,18 @@ CLASS_NAMES = [
 ]
 
 
+# ============================================================
+# IMPORTANT:
+# MobileNetV2 confidence below this value means that the
+# prediction is not considered a confident match.
+#
+# < 25%  -> Green Gram visual screening
+# >= 25% -> Single best MobileNetV2 prediction
+# ============================================================
+
+MOBILENET_MATCH_THRESHOLD = 25.0
+
+
 @st.cache_resource
 def load_disease_model():
 
@@ -1097,12 +1108,14 @@ def disease_direction(
     label_lower = label.lower()
 
     if "healthy" in label_lower:
+
         return (
             "Direction: No obvious disease pattern detected. "
             "Continue regular crop monitoring."
         )
 
     if confidence < 50:
+
         return (
             "Direction: Prediction is uncertain. "
             "Capture a clearer close-up leaf image and verify the symptom visually."
@@ -1164,69 +1177,38 @@ def disease_predict(image):
 
 
 # ============================================================
-# AUTOMATIC CROP MATCHING
+# MOBILE NET MATCH / GREEN GRAM FALLBACK
 # ============================================================
 
-SUPPORTED_CROP_PREFIXES = [
-
-    "Apple",
-    "Blueberry",
-    "Cherry",
-    "Corn",
-    "Grape",
-    "Orange",
-    "Peach",
-    "Pepper",
-    "Potato",
-    "Raspberry",
-    "Soybean",
-    "Squash",
-    "Strawberry",
-    "Tomato",
-
-]
-
-DISEASE_MODEL_MATCH_THRESHOLD = 60.0
-
-
-def get_crop_from_label(label):
-
-    if not label:
-        return None
-
-    for crop in SUPPORTED_CROP_PREFIXES:
-
-        if label.startswith(
-            crop + "___"
-        ):
-
-            return crop
-
-    return None
-
-
-def is_green_gram_image(
+def should_use_green_gram_fallback(
     disease_label,
     disease_conf
 ):
+    """
+    MobileNetV2 is checked FIRST.
 
-    crop = get_crop_from_label(
-        disease_label
-    )
+    If the best MobileNetV2 prediction has confidence
+    below 25%, the image is treated as not having a
+    sufficiently confident match to the supported
+    MobileNetV2 classes.
 
-    # No supported crop matched
-    if crop is None:
+    Then Green Gram visual screening is used as the
+    fallback screening route.
+
+    IMPORTANT:
+    This does NOT prove that the image is Green Gram.
+    It means the image was not confidently matched by
+    the 38-class MobileNetV2 model.
+    """
+
+    if disease_label is None:
         return True
 
-    # Supported crop prediction is too uncertain
-    if disease_conf < DISEASE_MODEL_MATCH_THRESHOLD:
-        return True
-
-    return False
+    return disease_conf < MOBILENET_MATCH_THRESHOLD
 
 
 # ============================================================
-# GREEN GRAM VISUAL HEALTH SCREENING
+# GREEN GRAM AUTOMATIC VISUAL SCREENING
 # ============================================================
 
 def green_gram_health_screening(image):
@@ -2249,7 +2231,6 @@ flow_steps = [
     "🧠 DECIDE",
     "⚙️ ACT",
     "🔔 ALERT",
-
 ]
 
 
@@ -2275,6 +2256,12 @@ st.write(
     "🌿 Upload a clear crop or leaf image for "
     "AI-assisted crop-health screening, disease analysis, "
     "pest detection and visual nutrient-stress assessment."
+)
+
+st.caption(
+    "🧠 AI flow: MobileNetV2 is checked first. "
+    "If its best match is below 25% confidence, "
+    "the system switches to Green Gram visual screening."
 )
 
 
@@ -2349,9 +2336,9 @@ if uploaded is not None:
             )
 
 
-        # ----------------------------------------------------
-        # FIRST: DOWNLOADED DISEASE MODEL
-        # ----------------------------------------------------
+        # ====================================================
+        # STEP 1 — MOBILENETV2 FIRST
+        # ====================================================
 
         disease_label, disease_conf = (
             disease_predict(
@@ -2360,12 +2347,12 @@ if uploaded is not None:
         )
 
 
-        # ----------------------------------------------------
-        # AUTOMATIC FALLBACK
-        # ----------------------------------------------------
+        # ====================================================
+        # STEP 2 — CHECK 25% THRESHOLD
+        # ====================================================
 
         green_gram_detected = (
-            is_green_gram_image(
+            should_use_green_gram_fallback(
                 disease_label,
                 disease_conf
             )
@@ -2375,7 +2362,8 @@ if uploaded is not None:
         with result_col:
 
             # =================================================
-            # GREEN GRAM FALLBACK
+            # MOBILE NET LOW CONFIDENCE
+            # → GREEN GRAM FALLBACK
             # =================================================
 
             if green_gram_detected:
@@ -2383,6 +2371,24 @@ if uploaded is not None:
                 st.subheader(
                     "🌱 Green Gram AI-Assisted Health Screening"
                 )
+
+                if disease_label is None:
+
+                    st.info(
+                        "ℹ️ MobileNetV2 could not produce a valid prediction. "
+                        "The system is switching to Green Gram visual screening."
+                    )
+
+                else:
+
+                    st.info(
+                        f"ℹ️ MobileNetV2 best match was "
+                        f"{disease_conf:.1f}% confidence, "
+                        f"which is below the {MOBILENET_MATCH_THRESHOLD:.0f}% "
+                        "match threshold. The system is switching to "
+                        "Green Gram visual screening."
+                    )
+
 
                 (
                     green_gram_status,
@@ -2417,31 +2423,30 @@ if uploaded is not None:
                     f"{green_gram_score}/100"
                 )
 
-
                 st.progress(
                     green_gram_score
                 )
-
 
                 st.write(
                     green_gram_recommendation
                 )
 
-
                 st.caption(
-                    "The downloaded 38-class disease model "
-                    "did not produce a sufficiently confident "
-                    "supported-crop match. The image is therefore "
-                    "handled using Green Gram visual health screening."
+                    "AI-assisted visual screening based on "
+                    "visible leaf characteristics. This fallback "
+                    "does not prove that the uploaded image is Green Gram. "
+                    "Confirm crop identity and suspected disease, pest "
+                    "or nutrient problems through field inspection."
                 )
 
-
+                # Do not use low-confidence MobileNet prediction
+                # as the final disease result.
                 disease_label = None
                 disease_conf = 0.0
 
 
             # =================================================
-            # SUPPORTED CROP
+            # MOBILE NET CONFIDENT MATCH
             # =================================================
 
             else:
@@ -2456,16 +2461,8 @@ if uploaded is not None:
                         disease_label
                     )
 
-                    crop_name = get_crop_from_label(
-                        disease_label
-                    )
-
                     st.success(
-                        f"🌿 Crop: {crop_name}"
-                    )
-
-                    st.write(
-                        f"**Disease / Health Result:** {readable}"
+                        f"🌿 Best MobileNetV2 Match: {readable}"
                     )
 
                     st.metric(
@@ -2484,6 +2481,12 @@ if uploaded is not None:
                             readable,
                             disease_conf
                         )
+                    )
+
+                    st.caption(
+                        f"MobileNetV2 accepted this best match "
+                        f"because confidence is ≥ "
+                        f"{MOBILENET_MATCH_THRESHOLD:.0f}%."
                     )
 
                 else:
@@ -2506,7 +2509,6 @@ if uploaded is not None:
             pests = pest_predict(
                 image
             )
-
 
             if pests:
 
@@ -2558,16 +2560,13 @@ if uploaded is not None:
             image
         )
 
-
         st.subheader(
             "🌿 Visual Nutrient-Stress Assessment"
         )
 
-
         nutrient_cols = st.columns(
             3
         )
-
 
         with nutrient_cols[0]:
 
@@ -2584,7 +2583,6 @@ if uploaded is not None:
                     nutrient_score
                 )
 
-
         with nutrient_cols[1]:
 
             with st.container(
@@ -2595,7 +2593,6 @@ if uploaded is not None:
                     "Stress Level",
                     nutrient_level
                 )
-
 
         with nutrient_cols[2]:
 
@@ -2685,9 +2682,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 risk_cols = st.columns(4)
-
 
 final_scores = [
 
@@ -2750,7 +2745,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 recommendations = (
     generate_farmer_recommendation(
         soil=soil,
@@ -2790,7 +2784,6 @@ st.markdown(
     '<div class="section-heading">🌱 Farmer Help Assistant</div>',
     unsafe_allow_html=True
 )
-
 
 st.write(
     "👨‍🌾 Select a common question or type your own question."
@@ -2859,7 +2852,6 @@ if ask:
 
     question = typed_question.strip()
 
-
     if not question:
 
         if (
@@ -2870,13 +2862,11 @@ if ask:
 
             question = selected_question
 
-
     if not question:
 
         st.warning(
             "Please select a question or type your own question."
         )
-
 
     else:
 
@@ -3015,7 +3005,7 @@ if ask:
             elif green_gram_detected:
 
                 answer = (
-                    f"**Green Gram:** "
+                    f"**Green Gram screening:** "
                     f"{green_gram_status}. "
                     f"{green_gram_recommendation}"
                 )
@@ -3125,37 +3115,22 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 capabilities = [
 
     "📡 Multi-sensor ESP32 monitoring",
-
     "💧 Intelligent irrigation",
-
     "🌧️ Rain protection",
-
     "🌊 Waterlogging protection",
-
     "🚰 Flow-based pump fault detection",
-
     "📱 Blynk IoT monitoring",
-
-    "🌱 Automatic Green Gram fallback screening",
-
-    "🦠 38-class leaf disease prediction",
-
+    "🌱 Green Gram AI-assisted health screening",
+    "🦠 Single-best leaf disease prediction",
     "🐛 Pest detection",
-
     "🌿 Nutrient-stress assessment",
-
     "🏜️ Drought / water-stress scoring",
-
     "🌡️ Heat-stress scoring",
-
     "📊 Agricultural Risk Score",
-
     "👨‍🌾 Farmer recommendation engine",
-
     "💬 Farmer Help Assistant",
 
 ]
@@ -3188,7 +3163,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 st.info(
     "📡 ESP32 Sensors → "
     "☁️ Blynk IoT → "
@@ -3196,7 +3170,7 @@ st.info(
     "🧠 Intelligent Decision Engine → "
     "💧 Irrigation & Protection → "
     "🔬 AI Leaf Analysis → "
-    "🌱 Green Gram Fallback Screening → "
+    "🌱 Green Gram Health Screening → "
     "🐛 Pest Analysis → "
     "🌿 Nutrient Screening → "
     "🏜️ Drought + 🌡️ Heat Analysis → "
@@ -3217,12 +3191,9 @@ st.markdown(
     <b>🛡️ Important Agricultural Safety Note</b><br><br>
 
     AI disease and pest outputs are decision-support results.
-    When the downloaded 38-class disease model does not produce
-    a sufficiently confident supported-crop match, the system
-    uses Green Gram visual health screening as a fallback.
-
-    Green Gram visual screening is based on visible image
-    characteristics and does not provide definitive disease diagnosis.
+    Green Gram visual health screening is an AI-assisted screening
+    method based on visible image characteristics and does not provide
+    definitive disease diagnosis.
 
     Visual nutrient assessment is only a screening method and does not
     directly measure soil nutrient concentration.
