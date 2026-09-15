@@ -1,18 +1,22 @@
 import os
-import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import requests
 import streamlit as st
 from PIL import Image
+
+import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
+
 from ultralytics import YOLO
-import numpy as np
 
 
 # ============================================================
 # SMART PLANT GUARDIAN
-# AI + IoT SMART FARMING ASSISTANT
+# AI + IoT FIELD-DEPLOYABLE SMART FARMING ASSISTANT
 # ============================================================
 
 st.set_page_config(
@@ -24,195 +28,340 @@ st.set_page_config(
 
 
 # ============================================================
-# CSS
+# INDIA TIMEZONE
 # ============================================================
 
-st.markdown("""
-<style>
+INDIA_TZ = ZoneInfo("Asia/Kolkata")
 
-.stApp {
-    background:#f5f8f6;
-    color:#17221b;
-}
 
-.block-container {
-    padding-top:1.15rem;
-    padding-bottom:2rem;
-    max-width:1400px;
-}
-
-.hero {
-    background:linear-gradient(135deg,#163d2a,#286244);
-    border-radius:22px;
-    padding:28px 34px;
-    margin-bottom:18px;
-}
-
-.hero h1,
-.hero p {
-    color:#fff !important;
-}
-
-.hero h1 {
-    margin:0;
-    font-size:2.25rem;
-}
-
-.hero p {
-    margin:7px 0 0;
-    font-size:1rem;
-}
-
-.section-title {
-    color:#173d29 !important;
-    font-size:1.45rem;
-    font-weight:800;
-    margin:22px 0 12px;
-}
-
-.card {
-    background:#fff !important;
-    border:1px solid #d9e4dc;
-    border-radius:16px;
-    padding:16px;
-    box-shadow:0 3px 12px rgba(25,55,38,.07);
-    color:#17221b !important;
-    min-height:108px;
-}
-
-.card * {
-    color:#17221b !important;
-}
-
-.metric {
-    font-size:1.5rem;
-    font-weight:800;
-    color:#173d29 !important;
-}
-
-.label {
-    font-size:.82rem;
-    color:#53645a !important;
-    font-weight:700;
-}
-
-.status {
-    font-size:.86rem;
-    font-weight:800;
-    margin-top:5px;
-}
-
-.explain {
-    font-size:.80rem;
-    color:#53645a !important;
-    margin-top:4px;
-}
-
-.flow {
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    flex-wrap:wrap;
-    margin:12px 0 20px;
-}
-
-.flow-item {
-    background:#e8f2ec !important;
-    color:#173d29 !important;
-    border:1px solid #bfd4c6;
-    border-radius:999px;
-    padding:10px 15px;
-    font-weight:800;
-}
-
-.arrow {
-    color:#286244 !important;
-    font-size:1.25rem;
-    font-weight:900;
-}
-
-.info-box {
-    background:#edf6f0 !important;
-    border-left:5px solid #286244;
-    border-radius:12px;
-    padding:14px 17px;
-    color:#173d29 !important;
-}
-
-.info-box * {
-    color:#173d29 !important;
-}
-
-.warning-box {
-    background:#fff7df !important;
-    border-left:5px solid #d49a16;
-    border-radius:12px;
-    padding:14px 17px;
-    color:#5b4305 !important;
-}
-
-.warning-box * {
-    color:#5b4305 !important;
-}
-
-.danger-box {
-    background:#fff0ee !important;
-    border-left:5px solid #c84b3c;
-    border-radius:12px;
-    padding:14px 17px;
-    color:#64251f !important;
-}
-
-.danger-box * {
-    color:#64251f !important;
-}
-
-.feature {
-    background:#fff !important;
-    border:1px solid #d9e4dc;
-    border-radius:14px;
-    padding:14px 16px;
-    color:#17221b !important;
-    min-height:112px;
-    margin-bottom:12px;
-}
-
-.feature * {
-    color:#17221b !important;
-}
-
-.assistant-card {
-    background:#fff !important;
-    border:1px solid #d9e4dc;
-    border-radius:16px;
-    padding:18px;
-    color:#17221b !important;
-}
-
-.assistant-card * {
-    color:#17221b !important;
-}
-
-.footer {
-    text-align:center;
-    color:#637269 !important;
-    padding:20px 0 5px;
-    font-size:.82rem;
-}
-
-</style>
-""", unsafe_allow_html=True)
+def india_now():
+    return datetime.now(INDIA_TZ)
 
 
 # ============================================================
-# BLYNK
+# DARK AGRICULTURAL UI
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+    .stApp {
+        background:
+            linear-gradient(
+                rgba(4, 32, 20, 0.95),
+                rgba(5, 48, 28, 0.97)
+            ),
+            url("https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=2400&q=80");
+
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+
+        color: #ffffff;
+    }
+
+
+    .block-container {
+        max-width: 1450px;
+        padding-top: 1.2rem;
+        padding-bottom: 3rem;
+    }
+
+
+    body,
+    p,
+    span,
+    label,
+    div {
+        color: #f5fff7;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+        color: #ffffff !important;
+    }
+
+    .stMarkdown {
+        color: #f5fff7;
+    }
+
+
+    [data-testid="stAppViewContainer"] h1 {
+        color: #ffffff !important;
+        font-size: 2.4rem !important;
+        font-weight: 850 !important;
+        margin-bottom: 0.2rem !important;
+    }
+
+    [data-testid="stAppViewContainer"] h2 {
+        color: #e1ffe9 !important;
+    }
+
+
+    .section-heading {
+        font-size: 1.45rem;
+        font-weight: 850;
+        color: #ffffff !important;
+
+        margin-top: 30px;
+        margin-bottom: 14px;
+
+        padding: 10px 14px;
+
+        border-left: 5px solid #7ee69c;
+
+        background:
+            rgba(6, 58, 32, 0.75);
+
+        border-radius: 8px;
+    }
+
+
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background:
+            rgba(7, 52, 30, 0.90) !important;
+
+        border:
+            1px solid rgba(183, 255, 199, 0.23) !important;
+
+        border-radius: 16px !important;
+
+        box-shadow:
+            0 8px 25px rgba(0, 0, 0, 0.23);
+    }
+
+
+    [data-testid="stMetricLabel"] {
+        color: #c7f5d2 !important;
+        font-weight: 750 !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #ffffff !important;
+        font-weight: 850 !important;
+    }
+
+    [data-testid="stMetricDelta"] {
+        color: #a9f2bb !important;
+    }
+
+
+    .stCaption,
+    [data-testid="stCaptionContainer"] {
+        color: #bce9c8 !important;
+    }
+
+
+    input,
+    textarea {
+        background-color: #f4fff6 !important;
+        color: #102719 !important;
+
+        border: 2px solid #76c98d !important;
+        border-radius: 10px !important;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: #607566 !important;
+    }
+
+
+    [data-baseweb="select"] > div {
+        background-color: #f4fff6 !important;
+        color: #102719 !important;
+
+        border: 2px solid #76c98d !important;
+        border-radius: 10px !important;
+    }
+
+    [data-baseweb="select"] span {
+        color: #102719 !important;
+    }
+
+
+    .stButton > button {
+        background:
+            linear-gradient(
+                135deg,
+                #2e8b57,
+                #49b96f
+            ) !important;
+
+        color: #ffffff !important;
+
+        border: 1px solid #83e6a0 !important;
+        border-radius: 12px !important;
+
+        font-weight: 800 !important;
+
+        padding: 0.55rem 1.2rem !important;
+
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.28);
+    }
+
+    .stButton > button:hover {
+        background:
+            linear-gradient(
+                135deg,
+                #3aa968,
+                #65d886
+            ) !important;
+
+        color: #ffffff !important;
+    }
+
+
+    [data-testid="stFileUploader"] {
+        background:
+            rgba(8, 55, 32, 0.94) !important;
+
+        border:
+            2px dashed #7de59b !important;
+
+        border-radius: 16px !important;
+
+        padding: 12px !important;
+    }
+
+    [data-testid="stFileUploader"] label {
+        color: #ffffff !important;
+        font-weight: 800 !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] {
+        background: #0c4a2b !important;
+        border-radius: 12px !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] * {
+        color: #ffffff !important;
+    }
+
+
+    [data-testid="stAlert"] {
+        border-radius: 12px !important;
+    }
+
+    [data-testid="stAlert"] p {
+        color: #ffffff !important;
+    }
+
+
+    [data-testid="stProgressBar"] > div {
+        background-color: #174c2d !important;
+    }
+
+    [data-testid="stProgressBar"] > div > div {
+        background-color: #71df91 !important;
+    }
+
+
+    img {
+        border-radius: 14px;
+    }
+
+
+    .recommendation {
+        background:
+            linear-gradient(
+                135deg,
+                rgba(17, 90, 49, 0.97),
+                rgba(11, 67, 36, 0.97)
+            );
+
+        border-left:
+            5px solid #7be59a;
+
+        padding: 15px 18px;
+
+        border-radius: 12px;
+
+        margin-top: 10px;
+
+        color: #ffffff !important;
+
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.22);
+    }
+
+    .recommendation * {
+        color: #ffffff !important;
+    }
+
+
+    .warning-note {
+        background: #594817;
+
+        border-left:
+            5px solid #f3cf5b;
+
+        padding: 15px 18px;
+
+        border-radius: 12px;
+
+        color: #fffdf0 !important;
+    }
+
+    .warning-note * {
+        color: #fffdf0 !important;
+    }
+
+
+    .footer {
+        text-align: center;
+
+        color: #b8e7c4 !important;
+
+        padding-top: 30px;
+
+        font-size: 0.9rem;
+    }
+
+
+    *,
+    *::before,
+    *::after {
+        backdrop-filter: none !important;
+        filter: none !important;
+        transition: none !important;
+        animation: none !important;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.title("🌱 Smart Plant Guardian")
+
+st.subheader(
+    "🌿 AI + IoT Field-Deployable Smart Farming Assistant"
+)
+
+st.caption(
+    "🌾 Real-Time Crop • Water • Environment • Risk Intelligence"
+)
+
+
+# ============================================================
+# BLYNK CONFIGURATION
 # ============================================================
 
 BLYNK_URL = "https://blynk.cloud/external/api/getAll"
 
 
-DEFAULT_PIN_MAP = {
+PIN_MAP = {
     "temperature": "v0",
     "humidity": "v1",
     "soil": "v2",
@@ -228,56 +377,90 @@ DEFAULT_PIN_MAP = {
 }
 
 
+FLOW_SCALE = 10.0
+
+
 def get_blynk_token():
+
     token = ""
 
-    for key in ("BLYNK_AUTH_TOKEN", "BLYNK_TOKEN"):
-        try:
-            token = st.secrets.get(key, "")
-        except Exception:
-            token = ""
-
-        if token:
-            return token
-
-    return (
-        os.getenv("BLYNK_AUTH_TOKEN", "")
-        or os.getenv("BLYNK_TOKEN", "")
-    )
-
-
-def get_pin_map():
-    pin_map = DEFAULT_PIN_MAP.copy()
-
     try:
-        custom = st.secrets.get("PIN_MAP", {})
-
-        if isinstance(custom, dict):
-            for key, value in custom.items():
-                if key in pin_map and value:
-                    value = str(value).lower()
-
-                    if not value.startswith("v"):
-                        value = "v" + value
-
-                    pin_map[key] = value
+        token = st.secrets.get(
+            "BLYNK_AUTH_TOKEN",
+            ""
+        )
     except Exception:
         pass
 
-    return pin_map
+    if not token:
+        try:
+            token = st.secrets.get(
+                "BLYNK_TOKEN",
+                ""
+            )
+        except Exception:
+            pass
+
+    if not token:
+        token = os.getenv(
+            "BLYNK_AUTH_TOKEN",
+            ""
+        )
+
+    if not token:
+        token = os.getenv(
+            "BLYNK_TOKEN",
+            ""
+        )
+
+    return str(token).strip()
+
+
+def get_pin_map():
+
+    mapping = dict(PIN_MAP)
+
+    try:
+
+        custom = st.secrets.get(
+            "PIN_MAP",
+            {}
+        )
+
+        if custom:
+
+            for key, value in custom.items():
+
+                if key in mapping:
+
+                    mapping[key] = str(
+                        value
+                    ).lower()
+
+    except Exception:
+        pass
+
+    return mapping
 
 
 def get_blynk_data():
+
     token = get_blynk_token()
 
     if not token:
         return {}
 
     try:
+
         response = requests.get(
             BLYNK_URL,
-            params={"token": token},
-            headers={"Cache-Control": "no-cache"},
+            params={
+                "token": token
+            },
+            headers={
+                "Cache-Control": "no-cache, no-store",
+                "Pragma": "no-cache",
+            },
             timeout=3,
         )
 
@@ -295,6 +478,10 @@ def get_blynk_data():
 
 
 def get_value(data, pin):
+
+    if not data:
+        return None
+
     raw = data.get(pin)
 
     if raw is None:
@@ -307,180 +494,192 @@ def get_value(data, pin):
 
 
 # ============================================================
+# GENERAL HELPERS
+# ============================================================
+
+def clamp(value):
+
+    return max(
+        0.0,
+        min(
+            100.0,
+            float(value)
+        )
+    )
+
+
+def severity(score):
+
+    if score >= 75:
+        return "High"
+
+    if score >= 45:
+        return "Moderate"
+
+    if score >= 20:
+        return "Mild"
+
+    return "Low"
+
+
+def risk_direction(score):
+
+    if score >= 75:
+        return "Immediate attention"
+
+    if score >= 45:
+        return "Monitor closely"
+
+    if score >= 20:
+        return "Monitor"
+
+    return "Normal"
+
+
+# ============================================================
 # SENSOR INTERPRETATION
 # ============================================================
 
-def sensor_status_temperature(v):
+def temperature_status(v):
 
     if v is None:
-        return "Unavailable", "Waiting for sensor data."
+        return "Unavailable", "Waiting"
 
     if v >= 40:
-        return "Abnormal — High", "Heat conditions are severe."
+        return "Very High", "Heat risk"
 
     if v >= 35:
-        return "Warning — High", \
-            "Temperature is elevated; monitor crop heat stress."
+        return "High", "Monitor heat"
 
     if v < 15:
-        return "Warning — Low", \
-            "Temperature is low; monitor crop conditions."
+        return "Low", "Cold condition"
 
-    return "Normal", \
-        "Temperature is within the working monitoring range."
+    return "Normal", "Normal"
 
 
-def sensor_status_humidity(v):
+def humidity_status(v):
 
     if v is None:
-        return "Unavailable", "Waiting for sensor data."
+        return "Unavailable", "Waiting"
 
     if v >= 90:
-        return "Warning — Very humid", \
-            "High humidity may increase disease risk."
+        return "Very High", "Disease risk"
 
     if v >= 80:
-        return "Warning — High", \
-            "Humidity is high; monitor leaf-disease conditions."
+        return "High", "Monitor humidity"
 
     if v < 35:
-        return "Warning — Low", \
-            "Dry air may increase water stress."
+        return "Low", "Dry air"
 
-    return "Normal", \
-        "Humidity is within the working monitoring range."
+    return "Normal", "Normal"
 
 
-def soil_info(v):
+def soil_status(v):
 
     if v is None:
-        return "Unavailable", "Waiting for soil sensor data."
+        return "Unavailable", "Waiting"
 
     if v >= 3000:
-        return "Dry", \
-            "Soil is dry; irrigation may be required."
+        return "Dry", "Water may be needed"
 
-    if v >= 1800:
-        return "Moderately moist", \
-            "Soil has some moisture; continue monitoring."
+    if v >= 2400:
+        return "Moderate", "Monitor moisture"
 
-    return "Moist", \
-        "Soil moisture is currently adequate."
+    return "Moist", "Adequate moisture"
 
 
-def tank_info(v):
+def tank_status(v):
 
     if v is None:
-        return "Unavailable", "Waiting for tank sensor data."
+        return "Unavailable", "Waiting"
 
     if v >= 2500:
-        return "High", \
-            "Tank level is high; monitor for excessive filling."
+        return "High", "Water available"
 
     if v >= 1000:
-        return "Available", \
-            "Water is available for irrigation."
+        return "Available", "Water available"
 
-    return "Low / unavailable", \
-        "Water availability is insufficient for normal irrigation."
+    return "Low", "Water shortage"
 
 
-def light_info(v):
+def light_status(v):
 
     if v is None:
-        return "Unavailable", "Waiting for light sensor data."
+        return "Unavailable", "Waiting"
 
     if v < 500:
-        return "Low light", \
-            "Light level is low; monitor crop exposure."
+        return "Low", "Low light"
 
-    return "Normal", \
-        "Light level is above the low-light warning threshold."
+    return "Normal", "Adequate light"
 
 
-def rain_info(v):
+def rain_status(v):
 
     if v is None:
-        return "Unavailable", \
-            "Rain sensor data unavailable."
+        return "Unavailable", "Waiting"
 
     if v < 2500:
-        return "Rain detected", \
-            "Avoid unnecessary irrigation while rain is detected."
+        return "Detected", "Avoid irrigation"
 
-    return "No rain detected", \
-        "No rain signal is currently detected."
+    return "Clear", "No rain signal"
 
 
-def waterlog_info(v):
+def waterlog_status(v):
 
     if v is None:
-        return "Unavailable", \
-            "Waiting for waterlogging sensor data."
+        return "Unavailable", "Waiting"
 
     if v >= 1000:
-        return "Waterlogging detected", \
-            "Stop irrigation and allow excess water to drain."
+        return "Detected", "Stop irrigation"
 
-    return "Normal", \
-        "No significant standing-water signal detected."
+    return "Normal", "No waterlogging"
 
 
-def pump_info(v):
+def pump_status(v):
 
     if v is None:
-        return "Unavailable", \
-            "Pump status unavailable."
+        return "Unavailable", "Waiting"
 
     if v > 0:
-        return "ON", \
-            "Irrigation pump is currently active."
+        return "ON", "Pump active"
 
-    return "OFF", \
-        "Irrigation pump is currently inactive."
+    return "OFF", "Pump inactive"
 
 
-def safety_pump_info(v):
+def safety_pump_status(v):
 
     if v is None:
-        return "Unavailable", \
-            "Safety pump status unavailable."
+        return "Unavailable", "Waiting"
 
     if v > 0:
-        return "ON", \
-            "Safety pump is currently active."
+        return "ON", "Safety pump active"
 
-    return "OFF", \
-        "Safety pump is currently inactive."
+    return "OFF", "Safety pump inactive"
 
 
-def flow_info(v):
+def flow_status(v):
 
     if v is None:
-        return "Unavailable", \
-            "Waiting for flow data."
+        return "Unavailable", "Waiting"
 
-    lpm = v / 10.0
+    lpm = v / FLOW_SCALE
 
     if lpm <= 0.05:
-        return f"{lpm:.2f} L/min", \
-            "No meaningful water flow is currently detected."
+        return "0.00 L/min", "No flow"
 
-    return f"{lpm:.2f} L/min", \
-        "Water flow is being detected."
+    return (
+        f"{lpm:.2f} L/min",
+        "Flow detected"
+    )
 
 
 # ============================================================
-# RISK CALCULATIONS
+# DROUGHT / WATER STRESS
 # ============================================================
 
-def clamp(x):
-    return max(0, min(100, float(x)))
-
-
-def drought_score(
+def drought_water_stress(
     soil,
-    temp,
+    temperature,
     humidity,
     tank,
     rain,
@@ -498,29 +697,32 @@ def drought_score(
             score += 40
 
         elif soil >= 1800:
-            score += 22
+            score += 20
 
-    if temp is not None:
+    if temperature is not None:
 
-        if temp >= 35:
-            score += 18
+        if temperature >= 40:
+            score += 20
 
-        elif temp >= 32:
-            score += 10
+        elif temperature >= 35:
+            score += 15
+
+        elif temperature >= 32:
+            score += 8
 
     if humidity is not None:
 
-        if humidity < 40:
+        if humidity < 35:
             score += 15
 
-        elif humidity < 55:
+        elif humidity < 50:
             score += 8
 
     if tank is not None and tank < 1000:
-        score += 12
+        score += 15
 
     if rain is not None and rain < 2500:
-        score -= 15
+        score -= 20
 
     if waterlog is not None and waterlog >= 1000:
         score -= 20
@@ -528,37 +730,48 @@ def drought_score(
     return int(clamp(score))
 
 
-def heat_score(temp, humidity):
+# ============================================================
+# HEAT STRESS
+# ============================================================
 
-    if temp is None:
+def heat_stress(
+    temperature,
+    humidity
+):
+
+    if temperature is None:
         return 0
 
     score = 0
 
-    if temp >= 40:
+    if temperature >= 40:
         score += 75
 
-    elif temp >= 38:
+    elif temperature >= 38:
         score += 60
 
-    elif temp >= 35:
+    elif temperature >= 35:
         score += 42
 
-    elif temp >= 32:
+    elif temperature >= 32:
         score += 22
 
     if humidity is not None:
 
-        if humidity >= 80:
+        if humidity >= 85:
             score += 20
 
-        elif humidity >= 65:
+        elif humidity >= 70:
             score += 10
 
     return int(clamp(score))
 
 
-def waterlog_score(v):
+# ============================================================
+# WATERLOGGING STRESS
+# ============================================================
+
+def waterlogging_stress(v):
 
     if v is None:
         return 0
@@ -578,6 +791,10 @@ def waterlog_score(v):
     return 0
 
 
+# ============================================================
+# AGRICULTURAL RISK
+# ============================================================
+
 def agricultural_risk(
     drought,
     heat,
@@ -588,35 +805,144 @@ def agricultural_risk(
     nutrient=0
 ):
 
-    tank_risk = 100 if (
-        tank is not None and tank < 1000
-    ) else 0
+    tank_risk = 0
 
-    return int(
-        clamp(
-            drought * .25
-            + heat * .18
-            + waterlog * .18
-            + tank_risk * .10
-            + disease * .14
-            + pest * .05
-            + nutrient * .10
+    if (
+        tank is not None
+        and tank < 1000
+    ):
+        tank_risk = 100
+
+    result = (
+        drought * 0.25
+        + heat * 0.18
+        + waterlog * 0.18
+        + tank_risk * 0.10
+        + disease * 0.14
+        + pest * 0.05
+        + nutrient * 0.10
+    )
+
+    return int(clamp(result))
+
+
+# ============================================================
+# INTELLIGENT IRRIGATION ENGINE
+# ============================================================
+
+def irrigation_recommendation(
+    soil,
+    tank,
+    rain,
+    waterlog,
+    temperature,
+    humidity,
+    pump
+):
+
+    if (
+        waterlog is not None
+        and waterlog >= 1000
+    ):
+        return (
+            "DO NOT IRRIGATE",
+            "Waterlogging detected. Allow excess field water to drain."
         )
+
+    if (
+        rain is not None
+        and rain < 2500
+    ):
+        return (
+            "DO NOT IRRIGATE",
+            "Rain is detected. Avoid unnecessary irrigation."
+        )
+
+    if (
+        tank is not None
+        and tank < 1000
+    ):
+        return (
+            "WATER UNAVAILABLE",
+            "Tank water is too low for normal irrigation."
+        )
+
+    if soil is None:
+        return (
+            "MONITOR",
+            "Soil sensor data is unavailable."
+        )
+
+    if soil >= 3000:
+
+        if (
+            temperature is not None
+            and temperature >= 35
+        ):
+            return (
+                "PRIORITY IRRIGATION",
+                "Soil is dry and temperature is high."
+            )
+
+        return (
+            "IRRIGATION RECOMMENDED",
+            "Soil is dry and water is available."
+        )
+
+    if soil >= 2400:
+        return (
+            "MONITOR",
+            "Soil moisture is moderate."
+        )
+
+    return (
+        "NO IRRIGATION",
+        "Soil currently has adequate moisture."
     )
 
 
-def severity(score):
+# ============================================================
+# PUMP FAULT DETECTION
+# ============================================================
 
-    if score >= 75:
-        return "High"
+def pump_fault_status(
+    pump,
+    flow
+):
 
-    if score >= 45:
-        return "Moderate"
+    if (
+        pump is None
+        or flow is None
+    ):
+        return (
+            "UNKNOWN",
+            "Waiting for pump and flow data."
+        )
 
-    if score >= 20:
-        return "Mild"
+    lpm = flow / FLOW_SCALE
 
-    return "Low"
+    if (
+        pump > 0
+        and lpm <= 0.05
+    ):
+        return (
+            "POSSIBLE FAULT",
+            "Pump is ON but meaningful water flow is not detected."
+        )
+
+    if (
+        pump <= 0
+        and lpm > 0.05
+    ):
+        return (
+            "CHECK SYSTEM",
+            "Flow is detected while the irrigation pump is OFF."
+        )
+
+    return (
+        "NORMAL",
+        "Pump and flow feedback are consistent."
+    )
 
 
 # ============================================================
@@ -682,63 +1008,26 @@ CLASS_NAMES = [
 @st.cache_resource
 def load_disease_model():
 
-    model_path = "model/mobilenetv2_plant.pth"
-
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(
-            f"Model file not found: {model_path}"
-        )
-
-    model = models.mobilenet_v2(weights=None)
+    model = models.mobilenet_v2(
+        weights=None
+    )
 
     model.classifier[1] = nn.Sequential(
-        nn.Dropout(p=0.2),
+        nn.Dropout(
+            p=0.2
+        ),
+
         nn.Linear(
             model.classifier[1].in_features,
-            len(CLASS_NAMES)
+            38
         )
     )
 
-    checkpoint = torch.load(
-        model_path,
-        map_location="cpu"
-    )
-
-    # --------------------------------------------------------
-    # Support both:
-    # 1. Plain state_dict
-    # 2. Checkpoints containing state_dict
-    # --------------------------------------------------------
-
-    if isinstance(checkpoint, dict):
-
-        if "state_dict" in checkpoint:
-            state_dict = checkpoint["state_dict"]
-
-        elif "model_state_dict" in checkpoint:
-            state_dict = checkpoint["model_state_dict"]
-
-        else:
-            state_dict = checkpoint
-
-    else:
-        state_dict = checkpoint
-
-    # Remove possible "module." prefix
-    cleaned_state_dict = {}
-
-    for key, value in state_dict.items():
-
-        new_key = key
-
-        if new_key.startswith("module."):
-            new_key = new_key[7:]
-
-        cleaned_state_dict[new_key] = value
-
     model.load_state_dict(
-        cleaned_state_dict,
-        strict=True
+        torch.load(
+            "model/mobilenetv2_plant.pth",
+            map_location="cpu"
+        )
     )
 
     model.eval()
@@ -746,203 +1035,142 @@ def load_disease_model():
     return model
 
 
-@st.cache_resource
-def load_pest_model():
+transform = transforms.Compose(
+    [
 
-    model_path = "model/best.pt"
+        transforms.Resize(
+            (224, 224)
+        ),
 
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(
-            f"Pest model file not found: {model_path}"
-        )
+        transforms.ToTensor(),
 
-    return YOLO(model_path)
+        transforms.Normalize(
+            mean=[
+                0.485,
+                0.456,
+                0.406
+            ],
 
+            std=[
+                0.229,
+                0.224,
+                0.225
+            ]
+        ),
 
-transform = transforms.Compose([
-
-    transforms.Resize((224, 224)),
-
-    transforms.ToTensor(),
-
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    ),
-])
-
-
-def disease_predict(image):
-
-    """
-    Returns:
-
-        (label, confidence)
-
-    if MobileNetV2 successfully produces a prediction.
-
-    Returns:
-
-        (None, 0.0)
-
-    ONLY when the model cannot produce a prediction.
-    """
-
-    try:
-
-        model = load_disease_model()
-
-        x = transform(
-            image.convert("RGB")
-        ).unsqueeze(0)
-
-        with torch.no_grad():
-
-            logits = model(x)
-
-            probs = torch.softmax(
-                logits,
-                dim=1
-            )[0]
-
-        best_index = int(
-            torch.argmax(probs).item()
-        )
-
-        best_confidence = float(
-            probs[best_index].item()
-        ) * 100.0
-
-        best_label = CLASS_NAMES[best_index]
-
-        return best_label, best_confidence
-
-    except Exception as e:
-
-        return None, 0.0
-
-
-def disease_model_status():
-
-    try:
-
-        load_disease_model()
-
-        return True, "MobileNetV2 model loaded successfully."
-
-    except Exception as e:
-
-        return False, str(e)
+    ]
+)
 
 
 def clean_label(name):
 
     return (
         name
-        .replace("___", " — ")
-        .replace("_", " ")
+        .replace(
+            "___",
+            " — "
+        )
+        .replace(
+            "_",
+            " "
+        )
     )
 
 
 def disease_confidence(conf):
 
     if conf >= 80:
-        return "High-confidence prediction"
+        return "High confidence"
 
     if conf >= 60:
-        return "Moderate-confidence prediction"
+        return "Moderate confidence"
 
     if conf >= 40:
-        return "Low-confidence — verify visually"
+        return "Low confidence — verify visually"
 
-    return "Very low confidence — treat as uncertain"
+    return (
+        "Very low confidence — prediction uncertain"
+    )
 
 
-def disease_direction(label, conf):
+def disease_direction(
+    label,
+    confidence
+):
 
-    text = label.lower()
+    label_lower = label.lower()
 
-    if "healthy" in text:
-
+    if "healthy" in label_lower:
         return (
-            "🌿 Direction: The leaf appears consistent "
-            "with the healthy class. Continue regular monitoring."
+            "Direction: No obvious disease pattern detected. "
+            "Continue regular crop monitoring."
         )
 
-    if "bacterial" in text:
-
+    if confidence < 50:
         return (
-            "🦠 Direction: Possible bacterial disease pattern. "
-            "Inspect spots and affected areas and confirm before treatment."
-        )
-
-    if "early blight" in text:
-
-        return (
-            "🦠 Direction: Possible early blight pattern. "
-            "Inspect lower/older leaves and confirm visually."
-        )
-
-    if "late blight" in text:
-
-        return (
-            "🦠 Direction: Possible late blight pattern. "
-            "Inspect rapidly spreading lesions and confirm urgently."
-        )
-
-    if "leaf mold" in text:
-
-        return (
-            "🦠 Direction: Possible leaf-mold pattern. "
-            "Check humidity and leaf-surface symptoms."
-        )
-
-    if "septoria" in text:
-
-        return (
-            "🦠 Direction: Possible Septoria leaf-spot pattern. "
-            "Inspect for small dark lesions and confirm visually."
-        )
-
-    if "target spot" in text:
-
-        return (
-            "🦠 Direction: Possible target-spot pattern. "
-            "Inspect circular lesions and confirm before treatment."
-        )
-
-    if "yellow leaf curl" in text:
-
-        return (
-            "🦠 Direction: Possible Tomato Yellow Leaf Curl Virus pattern. "
-            "Check for curling/yellowing and inspect for whiteflies."
-        )
-
-    if "mosaic" in text:
-
-        return (
-            "🦠 Direction: Possible mosaic-virus pattern. "
-            "Inspect for mottling and confirm through proper diagnosis."
-        )
-
-    if "spider" in text:
-
-        return (
-            "🐛 Direction: Possible spider-mite-related damage. "
-            "Inspect leaf undersides and webbing."
-        )
-
-    if "powdery mildew" in text:
-
-        return (
-            "🦠 Direction: Possible powdery-mildew pattern. "
-            "Inspect for white powder-like growth."
+            "Direction: Prediction is uncertain. "
+            "Capture a clearer close-up leaf image and verify the symptom visually."
         )
 
     return (
-        "🔎 Direction: The model identified a visual disease/class pattern. "
-        "Verify the result through field inspection before treatment."
+        "Direction: Inspect affected leaves closely, "
+        "check nearby plants, isolate visibly affected plants when appropriate, "
+        "and confirm the suspected disease before treatment."
     )
+
+
+def disease_predict(image):
+
+    try:
+
+        model = load_disease_model()
+
+        x = transform(
+            image.convert(
+                "RGB"
+            )
+        ).unsqueeze(0)
+
+        with torch.no_grad():
+
+            output = model(x)
+
+            probabilities = torch.softmax(
+                output,
+                dim=1
+            )[0]
+
+        best_index = int(
+            torch.argmax(
+                probabilities
+            ).item()
+        )
+
+        confidence = float(
+            probabilities[
+                best_index
+            ].item() * 100
+        )
+
+        # IMPORTANT:
+        # Always return the single best MobileNetV2 prediction.
+        # There is NO confidence threshold here.
+        # Therefore a Tomato image will NOT be sent to Green Gram
+        # merely because its confidence is low.
+
+        return (
+            CLASS_NAMES[
+                best_index
+            ],
+            confidence
+        )
+
+    except Exception:
+
+        return (
+            None,
+            0.0
+        )
 
 
 # ============================================================
@@ -951,16 +1179,15 @@ def disease_direction(label, conf):
 
 def green_gram_health_screening(image):
 
-    """
-    This is NOT a disease classifier.
-
-    It is only a visual Green Gram health/stress screening
-    that runs when MobileNetV2 cannot return a prediction.
-    """
-
     arr = np.asarray(
-        image.convert("RGB").resize((224, 224))
-    ).astype(np.float32)
+        image.convert(
+            "RGB"
+        ).resize(
+            (224, 224)
+        )
+    ).astype(
+        np.float32
+    )
 
     r = arr[:, :, 0]
     g = arr[:, :, 1]
@@ -968,31 +1195,47 @@ def green_gram_health_screening(image):
 
     green = (
         (g > r * 1.05)
-        & (g > b * 1.03)
+        &
+        (g > b * 1.03)
     )
 
     yellow = (
         (r > b * 1.18)
-        & (g > b * 1.12)
-        & (r > 70)
+        &
+        (g > b * 1.12)
+        &
+        (r > 70)
     )
 
     brown = (
         (r > g * 1.12)
-        & (g > b * 1.05)
-        & (r > 70)
-        & (g < 170)
+        &
+        (g > b * 1.05)
+        &
+        (r > 70)
+        &
+        (g < 170)
     )
 
-    green_ratio = float(green.mean())
-    yellow_ratio = float(yellow.mean())
-    brown_ratio = float(brown.mean())
+    green_ratio = float(
+        green.mean()
+    )
+
+    yellow_ratio = float(
+        yellow.mean()
+    )
+
+    brown_ratio = float(
+        brown.mean()
+    )
 
     stress = int(
         clamp(
             yellow_ratio * 120
-            + brown_ratio * 100
-            - green_ratio * 20
+            +
+            brown_ratio * 100
+            -
+            green_ratio * 20
         )
     )
 
@@ -1001,8 +1244,8 @@ def green_gram_health_screening(image):
         status = "High visible stress"
 
         recommendation = (
-            "Inspect Green Gram leaves closely for "
-            "disease, pest damage, or nutrient stress."
+            "Inspect Green Gram leaves closely for disease, "
+            "pest damage, or nutrient stress."
         )
 
     elif stress >= 40:
@@ -1010,8 +1253,8 @@ def green_gram_health_screening(image):
         status = "Moderate visible stress"
 
         recommendation = (
-            "Monitor Green Gram leaves closely and "
-            "inspect yellow or brown areas."
+            "Monitor Green Gram leaves closely and inspect "
+            "yellow or brown areas."
         )
 
     elif stress >= 20:
@@ -1040,8 +1283,16 @@ def green_gram_health_screening(image):
 
 
 # ============================================================
-# PEST DETECTION
+# PEST MODEL
 # ============================================================
+
+@st.cache_resource
+def load_pest_model():
+
+    return YOLO(
+        "model/best.pt"
+    )
+
 
 def pest_predict(image):
 
@@ -1051,7 +1302,9 @@ def pest_predict(image):
 
         results = model.predict(
             source=np.array(
-                image.convert("RGB")
+                image.convert(
+                    "RGB"
+                )
             ),
             conf=0.25,
             verbose=False
@@ -1066,18 +1319,22 @@ def pest_predict(image):
 
             for box in result.boxes:
 
-                cid = int(
+                class_id = int(
                     box.cls[0]
                 )
 
-                conf = float(
-                    box.conf[0]
-                ) * 100
+                confidence = float(
+                    box.conf[0] * 100
+                )
+
+                name = result.names[
+                    class_id
+                ]
 
                 detections.append(
                     (
-                        result.names[cid],
-                        conf
+                        name,
+                        confidence
                     )
                 )
 
@@ -1094,14 +1351,20 @@ def pest_predict(image):
 
 
 # ============================================================
-# NUTRIENT STRESS
+# VISUAL NUTRIENT-STRESS ASSESSMENT
 # ============================================================
 
 def nutrient_assessment(image):
 
     arr = np.asarray(
-        image.convert("RGB").resize((224, 224))
-    ).astype(np.float32)
+        image.convert(
+            "RGB"
+        ).resize(
+            (224, 224)
+        )
+    ).astype(
+        np.float32
+    )
 
     r = arr[:, :, 0]
     g = arr[:, :, 1]
@@ -1109,31 +1372,47 @@ def nutrient_assessment(image):
 
     green = (
         (g > r * 1.05)
-        & (g > b * 1.03)
+        &
+        (g > b * 1.03)
     )
 
     yellow = (
         (r > b * 1.18)
-        & (g > b * 1.12)
-        & (r > 70)
+        &
+        (g > b * 1.12)
+        &
+        (r > 70)
     )
 
     brown = (
         (r > g * 1.12)
-        & (g > b * 1.05)
-        & (r > 70)
-        & (g < 170)
+        &
+        (g > b * 1.05)
+        &
+        (r > 70)
+        &
+        (g < 170)
     )
 
-    green_ratio = float(green.mean())
-    yellow_ratio = float(yellow.mean())
-    brown_ratio = float(brown.mean())
+    green_ratio = float(
+        green.mean()
+    )
+
+    yellow_ratio = float(
+        yellow.mean()
+    )
+
+    brown_ratio = float(
+        brown.mean()
+    )
 
     score = int(
         clamp(
             yellow_ratio * 120
-            + brown_ratio * 100
-            - green_ratio * 20
+            +
+            brown_ratio * 100
+            -
+            green_ratio * 20
         )
     )
 
@@ -1149,19 +1428,25 @@ def nutrient_assessment(image):
     else:
         level = "Low visible stress"
 
-    if yellow_ratio > .22 and green_ratio < .50:
+    if (
+        yellow_ratio > 0.22
+        and green_ratio < 0.50
+    ):
 
         pattern = (
             "Possible nitrogen-related chlorosis"
         )
 
-    elif yellow_ratio > .16 and green_ratio < .58:
+    elif (
+        yellow_ratio > 0.16
+        and green_ratio < 0.58
+    ):
 
         pattern = (
             "Possible magnesium/iron-related chlorosis"
         )
 
-    elif brown_ratio > .18:
+    elif brown_ratio > 0.18:
 
         pattern = (
             "Possible potassium-related / edge-burn stress"
@@ -1187,531 +1472,784 @@ def nutrient_assessment(image):
 
 
 # ============================================================
-# HEADER
+# FARMER RECOMMENDATION ENGINE
 # ============================================================
 
-st.markdown("""
-<div class="hero">
+def generate_farmer_recommendation(
+    soil,
+    tank,
+    rain,
+    waterlog,
+    temperature,
+    humidity,
+    drought,
+    heat,
+    risk,
+    disease_label=None,
+    disease_conf=0,
+    pests=None,
+    nutrient_score=0
+):
 
-<h1>🌱 Smart Plant Guardian</h1>
+    recommendations = []
 
-<p>
-AI + IoT Smart Farming Assistant for real-time crop,
-water and environmental intelligence
-</p>
+    irrigation, irrigation_reason = (
+        irrigation_recommendation(
+            soil,
+            tank,
+            rain,
+            waterlog,
+            temperature,
+            humidity,
+            0
+        )
+    )
 
-</div>
-""", unsafe_allow_html=True)
+    if irrigation == "PRIORITY IRRIGATION":
 
+        recommendations.append(
+            "💧 Prioritize irrigation because the soil is dry and heat stress is elevated."
+        )
 
-st.markdown(
-    f"""
-    <div class="card">
-        <b>System time:</b>
-        {time.strftime("%A, %d %B %Y • %I:%M:%S %p")}
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    elif irrigation == "IRRIGATION RECOMMENDED":
+
+        recommendations.append(
+            "💧 Irrigation can be considered because the soil is dry and water is available."
+        )
+
+    elif irrigation == "DO NOT IRRIGATE":
+
+        recommendations.append(
+            "🌧️ Do not irrigate now because rain or excess-water conditions are detected."
+        )
+
+    elif irrigation == "WATER UNAVAILABLE":
+
+        recommendations.append(
+            "🚰 Check or refill the irrigation water source before operating the pump."
+        )
+
+    else:
+
+        recommendations.append(
+            "💧 Continue monitoring soil moisture before irrigating."
+        )
+
+    if heat >= 60:
+
+        recommendations.append(
+            "🌡️ Heat stress is high. Protect the crop from prolonged heat and monitor moisture closely."
+        )
+
+    elif heat >= 35:
+
+        recommendations.append(
+            "🌡️ Moderate heat stress is present. Monitor crop temperature and water availability."
+        )
+
+    if drought >= 60:
+
+        recommendations.append(
+            "🏜️ Water stress is high. Check soil moisture and available irrigation water."
+        )
+
+    elif drought >= 35:
+
+        recommendations.append(
+            "🏜️ Some water stress is developing. Increase monitoring frequency."
+        )
+
+    if waterlog_status(
+        waterlog
+    )[0] == "Detected":
+
+        recommendations.append(
+            "🌊 Waterlogging is detected. Stop irrigation and improve drainage."
+        )
+
+    if disease_label:
+
+        if "healthy" not in disease_label.lower():
+
+            if disease_conf >= 60:
+
+                recommendations.append(
+                    "🦠 A disease pattern was detected. Inspect affected leaves and confirm before treatment."
+                )
+
+            else:
+
+                recommendations.append(
+                    "🦠 Disease prediction is uncertain. Capture a clearer leaf image and verify visually."
+                )
+
+    if pests:
+
+        recommendations.append(
+            "🐛 Possible pest activity was detected. Inspect the affected plant area before control action."
+        )
+
+    if nutrient_score >= 40:
+
+        recommendations.append(
+            "🌿 Visible nutrient-stress symptoms are present. Confirm with appropriate plant or soil testing before fertilizer application."
+        )
+
+    if risk >= 75:
+
+        recommendations.append(
+            "🚨 Overall agricultural risk is high. Give immediate attention to the main stress signals."
+        )
+
+    elif risk >= 45:
+
+        recommendations.append(
+            "⚠️ Overall agricultural risk is moderate. Monitor the crop and sensors closely."
+        )
+
+    else:
+
+        recommendations.append(
+            "✅ Overall agricultural risk is currently relatively low. Continue routine monitoring."
+        )
+
+    return recommendations
 
 
 # ============================================================
-# LIVE FARM MONITORING
+# INITIAL SESSION STATE
 # ============================================================
 
-st.markdown(
-    '<div class="section-title">📡 Live Farm Monitoring</div>',
-    unsafe_allow_html=True
-)
+if "live" not in st.session_state:
 
+    st.session_state.live = {
+
+        "data": {},
+
+        "temperature": None,
+        "humidity": None,
+        "soil": None,
+        "tank": None,
+
+        "pump": None,
+        "alert": None,
+        "light": None,
+
+        "waterlog": None,
+        "flow": None,
+        "priority": None,
+        "rain": None,
+
+        "safety_pump": None,
+
+        "drought": 0,
+        "heat": 0,
+        "waterlog_score": 0,
+
+        "agricultural_risk": 0,
+
+        "last_update": "Waiting",
+    }
+
+
+# ============================================================
+# LIVE MONITOR
+# ============================================================
 
 @st.fragment(run_every=2)
-def live_dashboard():
+def live_monitor():
+
+    pin = get_pin_map()
 
     data = get_blynk_data()
 
-    pin_map = get_pin_map()
-
-    temp = get_value(
+    temperature = get_value(
         data,
-        pin_map["temperature"]
+        pin["temperature"]
     )
 
     humidity = get_value(
         data,
-        pin_map["humidity"]
+        pin["humidity"]
     )
 
     soil = get_value(
         data,
-        pin_map["soil"]
+        pin["soil"]
     )
 
     tank = get_value(
         data,
-        pin_map["tank"]
+        pin["tank"]
     )
 
     pump = get_value(
         data,
-        pin_map["pump"]
+        pin["pump"]
     )
 
     alert = get_value(
         data,
-        pin_map["alert"]
+        pin["alert"]
     )
 
     light = get_value(
         data,
-        pin_map["light"]
+        pin["light"]
     )
 
     waterlog = get_value(
         data,
-        pin_map["waterlog"]
+        pin["waterlog"]
     )
 
     flow = get_value(
         data,
-        pin_map["flow"]
+        pin["flow"]
     )
 
     priority = get_value(
         data,
-        pin_map["priority"]
+        pin["priority"]
     )
 
     rain = get_value(
         data,
-        pin_map["rain"]
+        pin["rain"]
     )
 
     safety_pump = get_value(
         data,
-        pin_map["safety_pump"]
+        pin["safety_pump"]
     )
 
-    temp_s, temp_e = sensor_status_temperature(temp)
-
-    hum_s, hum_e = sensor_status_humidity(humidity)
-
-    soil_s, soil_e = soil_info(soil)
-
-    tank_s, tank_e = tank_info(tank)
-
-    light_s, light_e = light_info(light)
-
-    rain_s, rain_e = rain_info(rain)
-
-    wl_s, wl_e = waterlog_info(waterlog)
-
-    pump_s, pump_e = pump_info(pump)
-
-    safety_s, safety_e = safety_pump_info(
-        safety_pump
-    )
-
-    flow_s, flow_e = flow_info(flow)
-
-    drought = drought_score(
+    drought = drought_water_stress(
         soil,
-        temp,
+        temperature,
         humidity,
         tank,
         rain,
         waterlog
     )
 
-    heat = heat_score(
-        temp,
+    heat = heat_stress(
+        temperature,
         humidity
     )
 
-    wl_score = waterlog_score(
+    waterlog_score = waterlogging_stress(
         waterlog
     )
 
-    rows = [
-
-        [
-
-            (
-                "Temperature",
-                f"{temp:.1f} °C"
-                if temp is not None
-                else "N/A",
-                temp_s,
-                temp_e
-            ),
-
-            (
-                "Humidity",
-                f"{humidity:.1f} %"
-                if humidity is not None
-                else "N/A",
-                hum_s,
-                hum_e
-            ),
-
-            (
-                "Soil Sensor",
-                f"{soil:.0f}"
-                if soil is not None
-                else "N/A",
-                soil_s,
-                soil_e
-            ),
-
-            (
-                "Tank Water",
-                tank_s,
-                tank_s,
-                tank_e
-            ),
-
-            (
-                "Irrigation Pump",
-                pump_s,
-                pump_s,
-                pump_e
-            ),
-
-        ],
-
-        [
-
-            (
-                "Light Sensor",
-                f"{light:.0f}"
-                if light is not None
-                else "N/A",
-                light_s,
-                light_e
-            ),
-
-            (
-                "Rain Sensor",
-                rain_s,
-                rain_s,
-                rain_e
-            ),
-
-            (
-                "Waterlogging",
-                wl_s,
-                wl_s,
-                wl_e
-            ),
-
-            (
-                "Water Flow",
-                flow_s,
-                (
-                    "Normal"
-                    if flow is not None and flow > .05
-                    else "No flow"
-                ),
-                flow_e
-            ),
-
-            (
-                "Safety Pump",
-                safety_s,
-                safety_s,
-                safety_e
-            ),
-
-        ],
-
-        [
-
-            (
-                "Irrigation Priority",
-                f"{priority:.0f}/100"
-                if priority is not None
-                else "N/A",
-                "Live",
-                "Priority comes from the ESP32 irrigation decision."
-            ),
-
-            (
-                "Drought Stress",
-                f"{drought}/100",
-                severity(drought),
-                "Estimated from available sensor conditions."
-            ),
-
-            (
-                "Heat Stress",
-                f"{heat}/100",
-                severity(heat),
-                "Estimated from temperature and humidity."
-            ),
-
-            (
-                "Waterlogging Stress",
-                f"{wl_score}/100",
-                severity(wl_score),
-                "Estimated from the field waterlogging sensor."
-            ),
-
-            (
-                "Agricultural Risk",
-                f"{agricultural_risk(drought, heat, wl_score, tank)}/100",
-                severity(
-                    agricultural_risk(
-                        drought,
-                        heat,
-                        wl_score,
-                        tank
-                    )
-                ),
-                "Combined current farm risk."
-            ),
-
-        ],
-    ]
-
-    for row in rows:
-
-        cols = st.columns(5)
-
-        for col, item in zip(cols, row):
-
-            label, val, status, explain = item
-
-            with col:
-
-                st.markdown(
-                    f"""
-                    <div class="card">
-
-                        <div class="label">
-                            {label}
-                        </div>
-
-                        <div class="metric">
-                            {val}
-                        </div>
-
-                        <div class="status">
-                            {status}
-                        </div>
-
-                        <div class="explain">
-                            {explain}
-                        </div>
-
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-    risk = agricultural_risk(
+    agricultural_score = agricultural_risk(
         drought,
         heat,
-        wl_score,
+        waterlog_score,
         tank
     )
 
-    st.markdown(
-        f"""
-        <div class="info-box">
-
-        <b>Current farm interpretation:</b>
-
-        Drought/water stress
-        <b>{drought}/100</b>
-        •
-        Heat stress
-        <b>{heat}/100</b>
-        •
-        Waterlogging stress
-        <b>{wl_score}/100</b>
-        •
-        Current agricultural risk
-        <b>{risk}/100</b>.
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    if not data:
-
-        st.markdown(
-            """
-            <div class="warning-box">
-
-            <b>Blynk data unavailable.</b>
-
-            The dashboard is waiting for live device data.
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    return {
+    st.session_state.live = {
 
         "data": data,
 
-        "temp": temp,
-
+        "temperature": temperature,
         "humidity": humidity,
-
         "soil": soil,
-
         "tank": tank,
 
         "pump": pump,
-
         "alert": alert,
-
         "light": light,
 
         "waterlog": waterlog,
-
         "flow": flow,
-
         "priority": priority,
-
         "rain": rain,
 
         "safety_pump": safety_pump,
 
         "drought": drought,
-
         "heat": heat,
+        "waterlog_score": waterlog_score,
 
-        "waterlog_score": wl_score,
+        "agricultural_risk": agricultural_score,
 
-        "risk": risk,
-
+        "last_update": india_now().strftime(
+            "%I:%M:%S %p"
+        ),
     }
 
 
-live = live_dashboard()
+    # ========================================================
+    # SYSTEM TIME
+    # ========================================================
 
-
-# ============================================================
-# DECISION FLOW
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">🧠 Smart Decision Flow</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <div class="flow">
-
-        <div class="flow-item">MONITOR</div>
-
-        <div class="arrow">→</div>
-
-        <div class="flow-item">ANALYZE</div>
-
-        <div class="arrow">→</div>
-
-        <div class="flow-item">DECIDE</div>
-
-        <div class="arrow">→</div>
-
-        <div class="flow-item">ACT</div>
-
-        <div class="arrow">→</div>
-
-        <div class="flow-item">ALERT</div>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# CROP AI ANALYSIS
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">🔬 AI Crop-Health Analysis</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <div class="info-box">
-
-    <b>AI pipeline:</b>
-    MobileNetV2 disease prediction →
-    Pest detection →
-    Visual nutrient-stress assessment.
-
-    <br><br>
-
-    <b>Fallback:</b>
-    Green Gram visual screening is used
-    <b>only when MobileNetV2 cannot return a prediction.</b>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# MODEL STATUS
-# ============================================================
-
-model_loaded, model_message = disease_model_status()
-
-if model_loaded:
-
-    st.success(
-        "✅ MobileNetV2: Model loaded and ready."
+    st.markdown(
+        '<div class="section-heading">🕒 System Time</div>',
+        unsafe_allow_html=True
     )
 
-else:
-
-    st.warning(
-        "⚠️ MobileNetV2: Model is not available. "
-        "Green Gram fallback will be used if an image is uploaded."
+    clock_col1, clock_col2 = st.columns(
+        [2, 1]
     )
 
-    with st.expander("View model status details"):
+    with clock_col1:
 
-        st.code(
-            model_message
+        st.metric(
+            "⏱️ Current System Time",
+            india_now().strftime(
+                "%A, %d %B %Y • %I:%M:%S %p"
+            )
+        )
+
+        st.caption(
+            "🇮🇳 India Standard Time (IST)"
+        )
+
+    with clock_col2:
+
+        st.metric(
+            "📡 Last Blynk Update",
+            st.session_state.live[
+                "last_update"
+            ]
         )
 
 
+    # ========================================================
+    # LIVE FARM MONITORING
+    # ========================================================
+
+    st.markdown(
+        '<div class="section-heading">📡 Live Farm Monitoring</div>',
+        unsafe_allow_html=True
+    )
+
+    row1 = st.columns(5)
+
+    sensor_items = [
+
+        (
+            "🌡️ Temperature",
+            (
+                f"{temperature:.1f} °C"
+                if temperature is not None
+                else "N/A"
+            ),
+            temperature_status(
+                temperature
+            )
+        ),
+
+        (
+            "💧 Humidity",
+            (
+                f"{humidity:.1f} %"
+                if humidity is not None
+                else "N/A"
+            ),
+            humidity_status(
+                humidity
+            )
+        ),
+
+        (
+            "🌱 Soil Sensor",
+            (
+                f"{soil:.0f}"
+                if soil is not None
+                else "N/A"
+            ),
+            soil_status(
+                soil
+            )
+        ),
+
+        (
+            "🚰 Tank Water",
+            (
+                "N/A"
+                if tank is None
+                else tank_status(
+                    tank
+                )[0]
+            ),
+            tank_status(
+                tank
+            )
+        ),
+
+        (
+            "⚙️ Irrigation Pump",
+            (
+                "N/A"
+                if pump is None
+                else pump_status(
+                    pump
+                )[0]
+            ),
+            pump_status(
+                pump
+            )
+        ),
+
+    ]
+
+
+    for col, item in zip(
+        row1,
+        sensor_items
+    ):
+
+        title, value, status = item
+
+        with col:
+
+            with st.container(
+                border=True
+            ):
+
+                st.metric(
+                    title,
+                    value
+                )
+
+                st.caption(
+                    status[0]
+                )
+
+                st.caption(
+                    status[1]
+                )
+
+
+    # ========================================================
+    # SECOND SENSOR ROW
+    # ========================================================
+
+    row2 = st.columns(5)
+
+    second_items = [
+
+        (
+            "☀️ Light Sensor",
+            (
+                "N/A"
+                if light is None
+                else f"{light:.0f}"
+            ),
+            light_status(
+                light
+            )
+        ),
+
+        (
+            "🌧️ Rain Sensor",
+            (
+                "N/A"
+                if rain is None
+                else rain_status(
+                    rain
+                )[0]
+            ),
+            rain_status(
+                rain
+            )
+        ),
+
+        (
+            "🌊 Waterlogging",
+            (
+                "N/A"
+                if waterlog is None
+                else waterlog_status(
+                    waterlog
+                )[0]
+            ),
+            waterlog_status(
+                waterlog
+            )
+        ),
+
+        (
+            "🚿 Water Flow",
+            flow_status(
+                flow
+            )[0],
+            flow_status(
+                flow
+            )
+        ),
+
+        (
+            "🛡️ Safety Pump",
+            (
+                "N/A"
+                if safety_pump is None
+                else safety_pump_status(
+                    safety_pump
+                )[0]
+            ),
+            safety_pump_status(
+                safety_pump
+            )
+        ),
+
+    ]
+
+
+    for col, item in zip(
+        row2,
+        second_items
+    ):
+
+        title, value, status = item
+
+        with col:
+
+            with st.container(
+                border=True
+            ):
+
+                st.metric(
+                    title,
+                    value
+                )
+
+                st.caption(
+                    status[0]
+                )
+
+                st.caption(
+                    status[1]
+                )
+
+
+    # ========================================================
+    # THIRD LIVE STATUS ROW
+    # ========================================================
+
+    row3 = st.columns(3)
+
+    with row3[0]:
+
+        st.metric(
+            "🎯 Irrigation Priority",
+            (
+                f"{priority:.0f}/100"
+                if priority is not None
+                else "N/A"
+            )
+        )
+
+
+    with row3[1]:
+
+        pump_fault, pump_fault_reason = (
+            pump_fault_status(
+                pump,
+                flow
+            )
+        )
+
+        st.metric(
+            "🔧 Pump Health",
+            pump_fault
+        )
+
+        st.caption(
+            pump_fault_reason
+        )
+
+
+    with row3[2]:
+
+        st.metric(
+            "🔔 ESP32 Alert",
+            (
+                "Active"
+                if (
+                    alert is not None
+                    and alert > 0
+                )
+                else "Normal"
+                if alert is not None
+                else "N/A"
+            )
+        )
+
+
+    # ========================================================
+    # INTELLIGENT IRRIGATION
+    # ========================================================
+
+    irrigation, irrigation_reason = (
+        irrigation_recommendation(
+            soil,
+            tank,
+            rain,
+            waterlog,
+            temperature,
+            humidity,
+            pump
+        )
+    )
+
+    st.markdown(
+        '<div class="section-heading">💧 Intelligent Irrigation Decision</div>',
+        unsafe_allow_html=True
+    )
+
+    with st.container(
+        border=True
+    ):
+
+        st.subheader(
+            irrigation
+        )
+
+        st.write(
+            irrigation_reason
+        )
+
+
+    # ========================================================
+    # LIVE AGRICULTURAL RISK
+    # ========================================================
+
+    st.markdown(
+        '<div class="section-heading">📊 Live Agricultural Risk Intelligence</div>',
+        unsafe_allow_html=True
+    )
+
+    risk_cols = st.columns(4)
+
+    live_risks = [
+
+        (
+            risk_cols[0],
+            "🏜️ Drought / Water Stress",
+            drought
+        ),
+
+        (
+            risk_cols[1],
+            "🌡️ Heat Stress",
+            heat
+        ),
+
+        (
+            risk_cols[2],
+            "🌊 Waterlogging Stress",
+            waterlog_score
+        ),
+
+        (
+            risk_cols[3],
+            "📊 Agricultural Risk",
+            agricultural_score
+        ),
+
+    ]
+
+
+    for col, title, score in live_risks:
+
+        with col:
+
+            with st.container(
+                border=True
+            ):
+
+                st.metric(
+                    title,
+                    f"{score}/100"
+                )
+
+                st.progress(
+                    int(score)
+                )
+
+                st.caption(
+                    f"{severity(score)} • "
+                    f"{risk_direction(score)}"
+                )
+
+
+    if not data:
+
+        st.warning(
+            "📡 Blynk data is currently unavailable. "
+            "The dashboard is waiting for live ESP32 data."
+        )
+
+
+live_monitor()
+
+
 # ============================================================
-# FILE UPLOAD
+# SMART DECISION FLOW
 # ============================================================
 
-uploaded = st.file_uploader(
-    "Upload a clear crop / leaf image",
-    type=["jpg", "jpeg", "png"]
+st.markdown(
+    '<div class="section-heading">🧠 Smart Decision Flow</div>',
+    unsafe_allow_html=True
+)
+
+flow_cols = st.columns(5)
+
+flow_steps = [
+
+    "📡 MONITOR",
+    "🔬 ANALYZE",
+    "🧠 DECIDE",
+    "⚙️ ACT",
+    "🔔 ALERT",
+]
+
+
+for col, step in zip(
+    flow_cols,
+    flow_steps
+):
+
+    with col:
+        st.info(step)
+
+
+# ============================================================
+# AI CROP & LEAF ANALYSIS
+# ============================================================
+
+st.markdown(
+    '<div class="section-heading">🔬 AI Crop & Leaf Analysis</div>',
+    unsafe_allow_html=True
+)
+
+st.write(
+    "🌿 Upload a clear crop or leaf image for "
+    "single-best disease prediction, pest detection "
+    "and visual nutrient-stress assessment."
 )
 
 
 # ============================================================
-# DEFAULT AI VARIABLES
+# IMAGE UPLOAD
 # ============================================================
+
+uploaded = st.file_uploader(
+    "📤 Upload Crop / Leaf Image",
+    type=[
+        "jpg",
+        "jpeg",
+        "png"
+    ],
+    key="crop_image_upload"
+)
+
 
 disease_label = None
 disease_conf = 0.0
-
-green_gram_screening_active = False
-
-green_gram_score = 0
-
-green_gram_status = "Not analyzed"
-
-green_gram_recommendation = ""
 
 pests = []
 
@@ -1719,74 +2257,67 @@ nutrient_score = 0
 
 nutrient_level = "Not analyzed"
 
-nutrient_pattern = "Not analyzed"
+nutrient_pattern = (
+    "Upload an image to analyze."
+)
 
-disease_top_conf = 0
-
-pest_top_conf = 0
+green_gram_screening_active = False
+green_gram_score = 0
+green_gram_status = "Not analyzed"
+green_gram_recommendation = ""
 
 
 # ============================================================
 # IMAGE ANALYSIS
 # ============================================================
 
-if uploaded:
+if uploaded is not None:
 
     try:
 
         image = Image.open(
             uploaded
-        ).convert("RGB")
-
-    except Exception:
-
-        st.error(
-            "Unable to read the uploaded image."
+        ).convert(
+            "RGB"
         )
 
-        image = None
-
-
-    if image is not None:
-
-        c1, c2 = st.columns(
-            [1, 1.4]
+        image_col, result_col = (
+            st.columns(
+                [1, 1.35]
+            )
         )
 
 
-        # ----------------------------------------------------
-        # IMAGE
-        # ----------------------------------------------------
+        with image_col:
 
-        with c1:
+            st.subheader(
+                "🌿 Uploaded Crop / Leaf"
+            )
 
             st.image(
                 image,
-                caption="Uploaded crop image",
+                caption="Crop image selected for AI analysis",
                 use_container_width=True
             )
 
 
-        # ----------------------------------------------------
-        # DISEASE
-        # ----------------------------------------------------
+        with result_col:
 
-        with c2:
-
-            st.markdown(
-                "#### 🦠 Disease Detection — Single Best Prediction"
+            st.subheader(
+                "🦠 Leaf Disease Prediction"
             )
 
+            disease_label, disease_conf = (
+                disease_predict(
+                    image
+                )
+            )
+
+            # ==================================================
             # IMPORTANT:
-            # MobileNetV2 ALWAYS runs first.
-            disease_label, disease_conf = disease_predict(
-                image
-            )
-
-            # ------------------------------------------------
-            # CASE 1:
-            # MobileNetV2 returned a prediction
-            # ------------------------------------------------
+            # ONLY None activates Green Gram.
+            # LOW CONFIDENCE DOES NOT activate Green Gram.
+            # ==================================================
 
             if disease_label is not None:
 
@@ -1794,15 +2325,13 @@ if uploaded:
                     disease_label
                 )
 
-                disease_top_conf = disease_conf
-
                 st.success(
-                    f"🌿 Prediction: {readable}"
+                    readable
                 )
 
                 st.metric(
-                    "Confidence",
-                    f"{disease_conf:.2f}%"
+                    "🎯 Best Prediction Confidence",
+                    f"{disease_conf:.1f}%"
                 )
 
                 st.caption(
@@ -1818,21 +2347,13 @@ if uploaded:
                     )
                 )
 
-            # ------------------------------------------------
-            # CASE 2:
-            # MobileNetV2 returned NOTHING
-            #
-            # THIS IS THE ONLY CONDITION THAT ACTIVATES
-            # GREEN GRAM FALLBACK.
-            # ------------------------------------------------
-
             else:
 
                 green_gram_screening_active = True
 
                 st.info(
-                    "MobileNetV2 did not return a usable prediction. "
-                    "Switching to Green Gram visual screening."
+                    "🌱 MobileNetV2 did not return a usable prediction. "
+                    "Green Gram visual screening has been activated."
                 )
 
                 (
@@ -1843,41 +2364,32 @@ if uploaded:
                     image
                 )
 
-                st.markdown(
-                    "##### 🌱 Green Gram Visual Screening"
+                st.subheader(
+                    "🌱 Green Gram Visual Screening"
                 )
 
-                a, b = st.columns(2)
+                green_cols = st.columns(2)
 
-                with a:
+                with green_cols[0]:
 
                     st.metric(
                         "Visible Stress Score",
                         f"{green_gram_score}/100"
                     )
 
-                with b:
+                    st.progress(
+                        green_gram_score
+                    )
+
+                with green_cols[1]:
 
                     st.metric(
                         "Visual Status",
                         green_gram_status
                     )
 
-                st.caption(
+                st.write(
                     green_gram_recommendation
-                )
-
-                st.markdown(
-                    """
-                    <div class="warning-box">
-
-                    <b>Important:</b>
-                    This is a visual Green Gram
-                    health screening, not a disease diagnosis.
-
-                    </div>
-                    """,
-                    unsafe_allow_html=True
                 )
 
 
@@ -1885,8 +2397,8 @@ if uploaded:
             # PEST DETECTION
             # ------------------------------------------------
 
-            st.markdown(
-                "#### 🐛 Pest Detection"
+            st.subheader(
+                "🐛 Pest Detection"
             )
 
             pests = pest_predict(
@@ -1895,29 +2407,39 @@ if uploaded:
 
             if pests:
 
-                for pest, conf in pests:
+                for (
+                    pest_name,
+                    confidence
+                ) in pests:
 
                     st.write(
-                        f"**{pest} — {conf:.2f}%**"
+                        f"**🐛 {pest_name}** — "
+                        f"{confidence:.1f}%"
                     )
 
-                    st.caption(
-                        (
-                            "Low-confidence detection — "
-                            "verify visually."
-                            if conf < 50
-                            else
-                            "Model detection — "
-                            "verify before treatment."
+                    st.progress(
+                        min(
+                            int(confidence),
+                            100
                         )
                     )
 
-                pest_top_conf = pests[0][1]
+                    if confidence >= 60:
+
+                        st.caption(
+                            "Detected — verify visually."
+                        )
+
+                    else:
+
+                        st.caption(
+                            "Low-confidence detection — verify visually."
+                        )
 
             else:
 
                 st.success(
-                    "No pest detected at the current detection threshold."
+                    "✅ No pest detected at the current detection threshold."
                 )
 
 
@@ -1933,296 +2455,214 @@ if uploaded:
             image
         )
 
-        st.markdown(
-            "#### 🌿 Visual Nutrient-Stress Assessment"
+        st.subheader(
+            "🌿 Visual Nutrient-Stress Assessment"
         )
 
-        a, b, c = st.columns(3)
+        nutrient_cols = st.columns(
+            3
+        )
 
-        with a:
+        with nutrient_cols[0]:
 
-            st.markdown(
-                f"""
-                <div class="card">
+            with st.container(
+                border=True
+            ):
 
-                    <div class="label">
-                        Visual Stress Score
-                    </div>
+                st.metric(
+                    "Visual Stress Score",
+                    f"{nutrient_score}/100"
+                )
 
-                    <div class="metric">
-                        {nutrient_score}/100
-                    </div>
+                st.progress(
+                    nutrient_score
+                )
 
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        with nutrient_cols[1]:
 
-        with b:
+            with st.container(
+                border=True
+            ):
 
-            st.markdown(
-                f"""
-                <div class="card">
+                st.metric(
+                    "Stress Level",
+                    nutrient_level
+                )
 
-                    <div class="label">
-                        Severity
-                    </div>
+        with nutrient_cols[2]:
 
-                    <div class="metric">
-                        {nutrient_level}
-                    </div>
+            with st.container(
+                border=True
+            ):
 
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                st.write(
+                    "**Possible Visual Pattern**"
+                )
 
-        with c:
-
-            st.markdown(
-                f"""
-                <div class="card">
-
-                    <div class="label">
-                        Possible Pattern
-                    </div>
-
-                    <div class="explain">
-                        <b>{nutrient_pattern}</b>
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                st.write(
+                    nutrient_pattern
+                )
 
 
-        st.markdown(
-            """
-            <div class="warning-box">
+        st.warning(
+            "🌿 Visual nutrient assessment is a screening tool. "
+            "It does not directly measure soil or leaf nutrient concentration. "
+            "Confirm suspected nutrient deficiency with appropriate agricultural testing."
+        )
 
-            <b>Preliminary visual assessment:</b>
 
-            This does not measure soil or leaf NPK concentration.
-            Confirm suspected deficiency with appropriate
-            agricultural testing before fertilizer application.
+    except Exception as error:
 
-            </div>
-            """,
-            unsafe_allow_html=True
+        st.error(
+            f"Image analysis could not be completed: {error}"
         )
 
 
 # ============================================================
-# CROP STRESS & AGRICULTURAL RISK
+# FINAL RISK ENGINE
 # ============================================================
 
-st.markdown(
-    '<div class="section-title">📊 Crop Stress & Agricultural Risk</div>',
-    unsafe_allow_html=True
-)
+live = st.session_state.live
+
+temperature = live["temperature"]
+
+humidity = live["humidity"]
+
+soil = live["soil"]
+
+tank = live["tank"]
+
+rain = live["rain"]
+
+waterlog = live["waterlog"]
 
 drought = live["drought"]
 
 heat = live["heat"]
 
-waterlog_s = live["waterlog_score"]
+waterlog_score = live["waterlog_score"]
 
 
-# IMPORTANT:
-# If Green Gram fallback is active, disease contribution = 0.
-# We do NOT treat Green Gram visual screening as disease confidence.
-
-disease_risk_value = (
-    disease_top_conf
-    if disease_label is not None
-    else 0
+highest_pest_confidence = max(
+    [
+        p[1]
+        for p in pests
+    ],
+    default=0
 )
 
 
-risk = agricultural_risk(
-
+combined_risk = agricultural_risk(
     drought,
-
     heat,
-
-    waterlog_s,
-
-    live["tank"],
-
-    disease_risk_value,
-
-    pest_top_conf
-    if pests
+    waterlog_score,
+    tank,
+    disease_conf
+    if disease_label
     else 0,
+
+    highest_pest_confidence,
 
     nutrient_score
 )
 
 
-c1, c2, c3, c4 = st.columns(4)
+# ============================================================
+# FINAL AGRICULTURAL RISK SCORE
+# ============================================================
 
+st.markdown(
+    '<div class="section-heading">🚨 Final Agricultural Risk Score</div>',
+    unsafe_allow_html=True
+)
 
-for col, title, score in [
+risk_cols = st.columns(4)
+
+final_scores = [
 
     (
-        c1,
-        "Drought / Water Stress",
+        risk_cols[0],
+        "🏜️ Drought / Water Stress",
         drought
     ),
 
     (
-        c2,
-        "Heat Stress",
+        risk_cols[1],
+        "🌡️ Heat Stress",
         heat
     ),
 
     (
-        c3,
-        "Waterlogging Stress",
-        waterlog_s
+        risk_cols[2],
+        "🌿 Nutrient Visual Stress",
+        nutrient_score
     ),
 
     (
-        c4,
-        "Agricultural Risk",
-        risk
+        risk_cols[3],
+        "🚨 Agricultural Risk",
+        combined_risk
     ),
 
-]:
+]
+
+
+for col, title, score in final_scores:
 
     with col:
 
-        st.markdown(
-            f"""
-            <div class="card">
+        with st.container(
+            border=True
+        ):
 
-                <div class="label">
-                    {title}
-                </div>
+            st.metric(
+                title,
+                f"{score}/100"
+            )
 
-                <div class="metric">
-                    {score}/100
-                </div>
+            st.progress(
+                int(score)
+            )
 
-                <div class="status">
-                    {severity(score)} risk level
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+            st.caption(
+                f"{severity(score)} • "
+                f"{risk_direction(score)}"
+            )
 
 
 # ============================================================
-# FARMER RECOMMENDATION
+# FARMER RECOMMENDATIONS
 # ============================================================
 
 st.markdown(
-    '<div class="section-title">👨‍🌾 Farmer Recommendation</div>',
+    '<div class="section-heading">👨‍🌾 Farmer Recommendation Engine</div>',
     unsafe_allow_html=True
 )
 
-
-recommendations = []
-
-
-if live["waterlog"] is not None and live["waterlog"] >= 1000:
-
-    recommendations.append(
-        "🚫 Avoid irrigation because waterlogging is detected."
+recommendations = (
+    generate_farmer_recommendation(
+        soil=soil,
+        tank=tank,
+        rain=rain,
+        waterlog=waterlog,
+        temperature=temperature,
+        humidity=humidity,
+        drought=drought,
+        heat=heat,
+        risk=combined_risk,
+        disease_label=disease_label,
+        disease_conf=disease_conf,
+        pests=pests,
+        nutrient_score=nutrient_score
     )
-
-
-elif live["tank"] is not None and live["tank"] < 1000:
-
-    recommendations.append(
-        "💧 Tank water is low/unavailable; avoid unnecessary pump operation."
-    )
-
-
-elif live["soil"] is not None and live["soil"] >= 3000:
-
-    recommendations.append(
-        "💧 Soil is dry; irrigation can be considered if water is available and rain/waterlogging protection is clear."
-    )
-
-
-else:
-
-    recommendations.append(
-        "🌱 Soil is not currently in the dry range; continue monitoring."
-    )
-
-
-if heat >= 60:
-
-    recommendations.append(
-        "🌡️ Heat stress is high; prioritize crop protection and moisture monitoring."
-    )
-
-elif heat >= 35:
-
-    recommendations.append(
-        "🌡️ Moderate heat stress detected; monitor temperature and soil moisture."
-    )
-
-
-if drought >= 60:
-
-    recommendations.append(
-        "☀️ High drought/water stress detected; monitor water availability closely."
-    )
-
-
-if green_gram_screening_active:
-
-    recommendations.append(
-        "🌱 MobileNetV2 was unavailable for this image, so Green Gram visual screening was used."
-    )
-
-
-if disease_label is not None:
-
-    readable_disease = clean_label(
-        disease_label
-    )
-
-    if "healthy" not in readable_disease.lower():
-
-        recommendations.append(
-            f"🦠 AI disease indication: {readable_disease}. "
-            "Verify visually before treatment."
-        )
-
-    else:
-
-        recommendations.append(
-            "🌿 AI result is consistent with a healthy crop class; continue routine monitoring."
-        )
-
-
-if pests:
-
-    recommendations.append(
-        f"🐛 Pest indication detected: {pests[0][0]}. "
-        "Verify the affected plant area before control action."
-    )
-
-
-if nutrient_score >= 40:
-
-    recommendations.append(
-        "🌿 Visible nutrient-stress pattern detected; confirm with soil/plant testing before fertilizer application."
-    )
+)
 
 
 for recommendation in recommendations:
 
     st.markdown(
         f"""
-        <div class="info-box">
+        <div class="recommendation">
             {recommendation}
         </div>
         """,
@@ -2235,8 +2675,12 @@ for recommendation in recommendations:
 # ============================================================
 
 st.markdown(
-    '<div class="section-title">👨‍🌾 Farmer Help Assistant</div>',
+    '<div class="section-heading">🌱 Farmer Help Assistant</div>',
     unsafe_allow_html=True
+)
+
+st.write(
+    "👨‍🌾 Select a common question or type your own question."
 )
 
 
@@ -2246,308 +2690,315 @@ questions = [
 
     "Is my soil too dry?",
 
-    "Is there a water shortage?",
+    "Is water available?",
 
-    "Is the crop under heat stress?",
+    "Is my crop under heat stress?",
 
     "Is waterlogging detected?",
 
-    "What should I do if a disease is suspected?",
+    "Is rain detected?",
 
-    "What should I do if pests are detected?",
+    "Is there a pump fault?",
 
-    "What does the agricultural risk score mean?",
+    "What does the disease prediction mean?",
+
+    "Are pests detected?",
+
+    "Is there visible nutrient stress?",
+
+    "What is the drought / water stress?",
+
+    "What is the Agricultural Risk Score?",
+
+    "What should I do now?",
 
 ]
 
 
 selected_question = st.selectbox(
-
-    "Select a common question",
-
-    ["Choose a question..."]
-    + questions
-
+    "1️⃣ Select a common question",
+    [
+        "Choose a question..."
+    ]
+    +
+    questions,
+    key="farmer_common_question"
 )
 
 
 typed_question = st.text_input(
-
-    "Or type your question",
-
-    placeholder="Example: Should I water my crop now?"
-
+    "2️⃣ Type your own question",
+    placeholder=(
+        "Example: Should I water my crop now?"
+    ),
+    key="farmer_typed_question"
 )
 
 
-question = (
-
-    typed_question.strip()
-
-    if typed_question.strip()
-
-    else (
-
-        ""
-
-        if selected_question
-        == "Choose a question..."
-
-        else selected_question
-
-    )
-
+ask = st.button(
+    "🌱 Ask Farmer Assistant",
+    type="primary",
+    key="farmer_assistant_button"
 )
 
 
-if question:
+if ask:
 
-    q = question.lower()
+    question = typed_question.strip()
 
-
-    # --------------------------------------------------------
-    # IRRIGATION
-    # --------------------------------------------------------
-
-    if (
-        "irrigat" in q
-        or "water now" in q
-        or (
-            "water" in q
-            and "soil" in q
-        )
-    ):
+    if not question:
 
         if (
-            live["waterlog"] is not None
-            and live["waterlog"] >= 1000
+            selected_question
+            !=
+            "Choose a question..."
         ):
 
-            answer = (
-                "Do not irrigate now. "
-                "Waterlogging is detected."
-            )
+            question = selected_question
 
-        elif (
-            live["rain"] is not None
-            and live["rain"] < 2500
-        ):
+    if not question:
 
-            answer = (
-                "Rain is currently detected. "
-                "Avoid unnecessary irrigation."
-            )
-
-        elif (
-            live["tank"] is not None
-            and live["tank"] < 1000
-        ):
-
-            answer = (
-                "Avoid pump operation because "
-                "tank water is currently low/unavailable."
-            )
-
-        elif (
-            live["soil"] is not None
-            and live["soil"] >= 3000
-        ):
-
-            answer = (
-                "The soil is dry. If water is available "
-                "and rain/waterlogging protection is clear, "
-                "irrigation can be prioritized."
-            )
-
-        else:
-
-            answer = (
-                "The soil is not currently in the dry range. "
-                "Continue monitoring before irrigating."
-            )
-
-
-    # --------------------------------------------------------
-    # SOIL
-    # --------------------------------------------------------
-
-    elif "soil" in q:
-
-        answer = soil_info(
-            live["soil"]
-        )[1]
-
-
-    # --------------------------------------------------------
-    # WATER
-    # --------------------------------------------------------
-
-    elif (
-        "shortage" in q
-        or "tank" in q
-        or "water availability" in q
-    ):
-
-        answer = tank_info(
-            live["tank"]
-        )[1]
-
-
-    # --------------------------------------------------------
-    # HEAT
-    # --------------------------------------------------------
-
-    elif (
-        "heat" in q
-        or "temperature" in q
-    ):
-
-        answer = (
-
-            f"Current heat-stress score is "
-            f"{heat}/100 ({severity(heat)}). "
-            "Monitor crop moisture and temperature."
-
+        st.warning(
+            "Please select a question or type your own question."
         )
-
-
-    # --------------------------------------------------------
-    # WATERLOGGING
-    # --------------------------------------------------------
-
-    elif (
-        "waterlogging" in q
-        or "standing" in q
-    ):
-
-        answer = waterlog_info(
-            live["waterlog"]
-        )[1]
-
-
-    # --------------------------------------------------------
-    # DISEASE
-    # --------------------------------------------------------
-
-    elif "disease" in q:
-
-        if disease_label is not None:
-
-            answer = (
-
-                f"Current AI indication: "
-                f"{clean_label(disease_label)} "
-                f"with {disease_conf:.2f}% confidence. "
-
-                "This is preliminary decision support. "
-                "Inspect the plant and confirm the suspected "
-                "disease before treatment."
-
-            )
-
-        elif green_gram_screening_active:
-
-            answer = (
-
-                "MobileNetV2 did not return a usable prediction "
-                "for the uploaded image. Green Gram visual screening "
-                f"reported {green_gram_score}/100 visible stress "
-                f"({green_gram_status}). "
-
-                "This is not a disease diagnosis; inspect the crop "
-                "and confirm the cause."
-
-            )
-
-        else:
-
-            answer = (
-
-                "Upload a crop image to run "
-                "the AI disease analysis."
-
-            )
-
-
-    # --------------------------------------------------------
-    # PEST
-    # --------------------------------------------------------
-
-    elif "pest" in q:
-
-        if pests:
-
-            answer = (
-
-                f"The AI detected "
-                f"{pests[0][0]} at "
-                f"{pests[0][1]:.2f}% confidence. "
-
-                "Inspect the affected crop area and "
-                "verify before taking control action."
-
-            )
-
-        else:
-
-            answer = (
-
-                "No pest was detected at the current "
-                "detection threshold."
-
-            )
-
-
-    # --------------------------------------------------------
-    # RISK
-    # --------------------------------------------------------
-
-    elif "risk" in q:
-
-        answer = (
-
-            f"The current Agricultural Risk Score is "
-            f"{risk}/100 ({severity(risk)}). "
-
-            "It combines available water/soil, heat, "
-            "waterlogging and crop-health signals."
-
-        )
-
-
-    # --------------------------------------------------------
-    # DEFAULT
-    # --------------------------------------------------------
 
     else:
 
-        answer = (
+        q = question.lower()
 
-            "I can help with irrigation, soil moisture, "
-            "water availability, heat stress, waterlogging, "
-            "crop disease, pests, nutrient stress, "
-            "and agricultural risk."
 
+        if (
+            "irrigat" in q
+            or "water now" in q
+            or "should i water" in q
+        ):
+
+            irrigation, reason = (
+                irrigation_recommendation(
+                    soil,
+                    tank,
+                    rain,
+                    waterlog,
+                    temperature,
+                    humidity,
+                    live["pump"]
+                )
+            )
+
+            answer = (
+                f"**{irrigation}** — "
+                f"{reason}"
+            )
+
+
+        elif "soil" in q:
+
+            soil_state = soil_status(
+                soil
+            )
+
+            answer = (
+                f"**Soil status:** "
+                f"{soil_state[0]}. "
+                f"{soil_state[1]}"
+            )
+
+
+        elif (
+            "tank" in q
+            or "water available" in q
+            or "water shortage" in q
+        ):
+
+            tank_state = tank_status(
+                tank
+            )
+
+            answer = (
+                f"**Water status:** "
+                f"{tank_state[0]}. "
+                f"{tank_state[1]}"
+            )
+
+
+        elif (
+            "heat" in q
+            or "temperature" in q
+        ):
+
+            answer = (
+                f"**Heat-stress score:** "
+                f"{heat}/100 "
+                f"({severity(heat)}). "
+                "Monitor crop temperature and water availability."
+            )
+
+
+        elif (
+            "waterlogging" in q
+            or "standing water" in q
+        ):
+
+            state = waterlog_status(
+                waterlog
+            )
+
+            answer = (
+                f"**Waterlogging:** "
+                f"{state[0]}. "
+                f"{state[1]}"
+            )
+
+
+        elif "rain" in q:
+
+            state = rain_status(
+                rain
+            )
+
+            answer = (
+                f"**Rain status:** "
+                f"{state[0]}. "
+                f"{state[1]}"
+            )
+
+
+        elif "pump" in q:
+
+            fault, reason = (
+                pump_fault_status(
+                    live["pump"],
+                    live["flow"]
+                )
+            )
+
+            answer = (
+                f"**Pump health:** "
+                f"{fault}. {reason}"
+            )
+
+
+        elif (
+            "disease" in q
+            or "leaf" in q
+        ):
+
+            if disease_label:
+
+                readable = clean_label(
+                    disease_label
+                )
+
+                answer = (
+                    f"**Leaf disease prediction:** "
+                    f"{readable} "
+                    f"({disease_conf:.1f}% confidence). "
+                    f"{disease_direction(readable, disease_conf)}"
+                )
+
+            elif green_gram_screening_active:
+
+                answer = (
+                    f"**Green Gram visual screening:** "
+                    f"{green_gram_status} "
+                    f"({green_gram_score}/100 visible stress). "
+                    f"{green_gram_recommendation}"
+                )
+
+            else:
+
+                answer = (
+                    "Upload a clear crop or leaf image "
+                    "to perform the disease prediction."
+                )
+
+
+        elif "pest" in q:
+
+            if pests:
+
+                answer = (
+                    f"Possible pest detected: "
+                    f"{pests[0][0]} "
+                    f"({pests[0][1]:.1f}%). "
+                    "Verify visually before taking control action."
+                )
+
+            else:
+
+                answer = (
+                    "No pest was detected at the current model threshold."
+                )
+
+
+        elif (
+            "nutrient" in q
+            or "deficien" in q
+            or "fertilizer" in q
+        ):
+
+            answer = (
+                f"**Visual nutrient-stress score:** "
+                f"{nutrient_score}/100. "
+                f"{nutrient_pattern}"
+            )
+
+
+        elif (
+            "drought" in q
+            or "water stress" in q
+        ):
+
+            answer = (
+                f"**Drought / water-stress score:** "
+                f"{drought}/100 "
+                f"({severity(drought)})."
+            )
+
+
+        elif (
+            "risk" in q
+            or "overall condition" in q
+        ):
+
+            answer = (
+                f"**Agricultural Risk Score:** "
+                f"{combined_risk}/100 "
+                f"({severity(combined_risk)}). "
+                "This combines environmental, water and crop-health signals."
+            )
+
+
+        elif (
+            "what should i do" in q
+            or "what can i do" in q
+            or "what do i do" in q
+        ):
+
+            answer = (
+                "**Recommended direction:** "
+                +
+                recommendations[0]
+            )
+
+
+        else:
+
+            answer = (
+                "I can help with irrigation, soil moisture, "
+                "water availability, rain, waterlogging, pump health, "
+                "leaf disease, pests, nutrient stress, drought, heat "
+                "and overall agricultural risk."
+            )
+
+
+        st.success(
+            "🌱 Farmer Assistant"
         )
 
-
-    st.markdown(
-
-        f"""
-        <div class="assistant-card">
-
-            <b>🌱 Assistant:</b>
-
-            <br><br>
-
-            {answer}
-
-        </div>
-        """,
-
-        unsafe_allow_html=True
-
-    )
+        st.write(
+            answer
+        )
 
 
 # ============================================================
@@ -2555,187 +3006,90 @@ if question:
 # ============================================================
 
 st.markdown(
-    '<div class="section-title">🌾 Smart Farming Capabilities</div>',
+    '<div class="section-heading">🌾 Smart Farming Capabilities</div>',
     unsafe_allow_html=True
 )
 
+capabilities = [
 
-features = [
-
-    (
-        "📡 Multi-Sensor Monitoring",
-
-        "Temperature, humidity, soil moisture, light, rain, tank water, waterlogging and water flow."
-    ),
-
-    (
-        "💧 Intelligent Irrigation",
-
-        "Uses soil condition, environment and water availability instead of simple dry-soil switching."
-    ),
-
-    (
-        "🌧️ Rain & Waterlogging Protection",
-
-        "Prevents unnecessary irrigation when rain or excess field water is detected."
-    ),
-
-    (
-        "🚰 Flow-Based Pump Fault Detection",
-
-        "Uses water-flow feedback to identify missing or abnormal irrigation flow."
-    ),
-
-    (
-        "📱 Blynk IoT Monitoring",
-
-        "Live farm values, pump status, alerts, flow and irrigation priority."
-    ),
-
-    (
-        "🔬 AI Disease Detection",
-
-        "MobileNetV2 single-best crop disease prediction with confidence interpretation."
-    ),
-
-    (
-        "🌱 Green Gram Fallback",
-
-        "Visual Green Gram health screening is activated only when the disease model cannot return a prediction."
-    ),
-
-    (
-        "🐛 Pest Detection",
-
-        "YOLO-based visual pest screening with confidence-aware interpretation."
-    ),
-
-    (
-        "🌿 Nutrient-Stress Screening",
-
-        "Visual leaf-color assessment for possible nutrient-stress patterns."
-    ),
-
-    (
-        "📊 Risk Intelligence",
-
-        "Drought/water stress, heat stress, waterlogging stress and overall Agricultural Risk Score."
-    ),
-
-    (
-        "👨‍🌾 Farmer Help Assistant",
-
-        "Predefined questions plus free-text farmer questions with practical responses."
-    ),
+    "📡 Multi-sensor ESP32 monitoring",
+    "💧 Intelligent irrigation",
+    "🌧️ Rain protection",
+    "🌊 Waterlogging protection",
+    "🚰 Flow-based pump fault detection",
+    "📱 Blynk IoT monitoring",
+    "🦠 Single-best leaf disease prediction",
+    "🐛 Pest detection",
+    "🌿 Nutrient-stress assessment",
+    "🏜️ Drought / water-stress scoring",
+    "🌡️ Heat-stress scoring",
+    "📊 Agricultural Risk Score",
+    "👨‍🌾 Farmer recommendation engine",
+    "💬 Farmer Help Assistant",
 
 ]
 
 
-cols = st.columns(4)
+cap_cols = st.columns(
+    4
+)
 
 
-for i, (title, desc) in enumerate(features):
+for index, capability in enumerate(
+    capabilities
+):
 
-    with cols[i % 4]:
+    with cap_cols[
+        index % 4
+    ]:
 
-        st.markdown(
-
-            f"""
-            <div class="feature">
-
-                <b>{title}</b>
-
-                <br><br>
-
-                <span class="explain">
-                    {desc}
-                </span>
-
-            </div>
-            """,
-
-            unsafe_allow_html=True
-
+        st.success(
+            capability
         )
 
 
 # ============================================================
-# OVERALL SYSTEM
+# INTEGRATED SMART FARMING ARCHITECTURE
 # ============================================================
 
 st.markdown(
-    '<div class="section-title">⚙️ Overall System</div>',
+    '<div class="section-heading">⚙️ Integrated Smart Farming Architecture</div>',
     unsafe_allow_html=True
 )
 
-
-st.markdown(
-    """
-    <div class="info-box">
-
-    <b>ESP32 + Sensors</b>
-    →
-    real-time farm monitoring
-    →
-
-    <b>Blynk IoT</b>
-    →
-    live farm state
-    →
-
-    <b>Intelligent Decision Layer</b>
-    →
-    irrigation / protection decisions
-    →
-
-    <b>AI Crop Analysis</b>
-    →
-    disease + pest + visual nutrient-stress screening
-    →
-
-    <b>Risk Engine</b>
-    →
-    drought + heat + waterlogging + crop-health signals
-    →
-
-    <b>Farmer Assistant</b>
-    →
-    practical recommendations.
-
-    </div>
-    """,
-    unsafe_allow_html=True
+st.info(
+    "📡 ESP32 Sensors → "
+    "☁️ Blynk IoT → "
+    "📊 Live Farm State → "
+    "🧠 Intelligent Decision Engine → "
+    "💧 Irrigation & Protection → "
+    "🔬 AI Leaf Analysis → "
+    "🐛 Pest Analysis → "
+    "🌿 Nutrient Screening → "
+    "🏜️ Drought + 🌡️ Heat Analysis → "
+    "🚨 Agricultural Risk Score → "
+    "👨‍🌾 Farmer Recommendation → "
+    "💬 Farmer Help Assistant"
 )
 
 
 # ============================================================
-# SAFETY NOTE
+# AGRICULTURAL SAFETY NOTE
 # ============================================================
 
 st.markdown(
     """
-    <div class="warning-box">
+    <div class="warning-note">
 
-    <b>Safety & interpretation note</b>
+    <b>🛡️ Important Agricultural Safety Note</b><br><br>
 
-    <br><br>
+    AI disease and pest outputs are decision-support results.
+    Visual nutrient assessment is only a screening method and does not
+    directly measure soil nutrient concentration.
 
-    AI results are preliminary decision-support outputs,
-    not guaranteed diagnoses.
-
-    <br>
-
-    Visual nutrient assessment does not measure NPK concentration.
-
-    <br>
-
-    Green Gram fallback is a visual health screening,
-    not a disease classifier.
-
-    <br>
-
-    Confirm disease, pest or nutrient problems with field
-    inspection and appropriate agricultural testing before treatment.
+    Disease, pest and nutrient conditions should be confirmed through
+    field inspection and appropriate agricultural testing before
+    treatment or fertilizer decisions.
 
     </div>
     """,
@@ -2748,11 +3102,18 @@ st.markdown(
 # ============================================================
 
 st.markdown(
+    """
+    <div class="footer">
 
-    '<div class="footer">'
-    'Smart Plant Guardian • AI + IoT Smart Farming Assistant • SIH Prototype'
-    '</div>',
+        🌱 Smart Plant Guardian
+        <br>
 
+        AI + IoT Field-Deployable Smart Farming Assistant
+        <br>
+
+        🚜 Monitor • Analyze • Decide • Act • Protect
+
+    </div>
+    """,
     unsafe_allow_html=True
-
 )
